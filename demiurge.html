@@ -732,7 +732,7 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
           <dl class="hrow"><dt>Orbital forcing</dt><dd>Milankovitch wobbles in tilt, insolation and greenhouse. Left on, ice ages arrive by themselves, sea level falls as ice locks up water, and land bridges open. The timeline shows it.</dd></dl>
           <dl class="hrow"><dt>Registry</dt><dd>Living polities with territory, population and technological era \u2014 neolithic through to orbital \u2014 and who rules each one.</dd></dl>
           <dl class="hrow"><dt>Rulers</dt><dd>Every polity has a named sovereign, consul, marshal or premier who reigns, wages the wars, presides over the golden ages, dies, and earns an epithet. Successions are usually quiet; sometimes they are not.</dd></dl>
-          <dl class="hrow"><dt>Cinema</dt><dd>Big events pull the camera to them briefly with a title card: impacts with ejecta, launches climbing to orbit, sparks along a war front, an eclipse shadow. The <b>Tour</b> button chains a whole sequence and travels between worlds; it also starts on its own if the terminal is left idle.</dd></dl>
+          <dl class="hrow"><dt>Cinema</dt><dd>Big events drop time to quarter speed and pull the camera to them with a title card and a sound of their own: impacts with a shockwave and ejecta, a launch climbing on its exhaust into orbit, a lander coming down, sparks and flashes along a war front, an eclipse shadow, a comet in the sky. The <b>Tour</b> button chains a whole sequence and travels between worlds; it also starts on its own if the terminal is left idle.</dd></dl>
           <dl class="hrow"><dt>Tree of life</dt><dd>Life radiates from the sea into the shore, the forests and plains, the deserts, the ice, the peaks and the air, one lineage descending from another. Ice ages, heat, impacts and snowball events cull it. The first land lineage to reach sapience founds the first polity. The <b>Life</b> channel maps who holds each niche; the codex prints the whole tree.</dd></dl>
           <dl class="hrow"><dt>Chronicle</dt><dd>Written as it happens. Amber entries are civilisations, green are biological, brown geological, red catastrophic.</dd></dl>
           <dl class="hrow"><dt>Timeline</dt><dd>Global mean temperature in amber over an ice-cover band in teal; ticks mark living polities. <b>Drag across it</b> to scrub history: borders and climate rewind to that year. Press play to return to the present.</dd></dl>
@@ -2143,7 +2143,7 @@ function civTick(dt){
       ev('civ',"<b>"+c.title+"</b> enters its "+ERAS[era]+" age"+
         (era>=5?" \u2014 "+R(["furnaces darken the sky over its cities","the first railways cross the interior",
           "population doubles in a century","its fleets map every coast"])+".":"."));
-      if(era>=8){addSatellites(curPlanet(),c,2);momentGeneric('ORBIT',c.title+' reaches orbit',rulerName(c),c.capital,1.9);}
+      if(era>=8){addSatellites(curPlanet(),c,2);momentGeneric('ORBIT',c.title+' reaches orbit',rulerName(c),c.capital,1.9,'found');}
     }
     const cityStep=Math.max(55,W.V*Math.max(0.02,S.landFrac)*0.035);
     if(n>(c.cities.length+1)*cityStep&&c.cities.length<8){
@@ -2908,7 +2908,7 @@ const TIPS={
  '#btn-back':['Back to the planet','Leave the moon and return to the surface view.'],
  '#btn-codex':['Codex','A written record of the whole system as it stands: star, every body, the polities of this world and its chronicle. Copy it as text to keep or share. C toggles.'],
  '#btn-tour':['Tour','Sit back. The camera flies itself: the world, a city at night, a frontier, the highlands, orbit, a moon, the system, then the next planet. Starts by itself after ninety idle seconds. Any key stops it. T toggles.'],
- '#btn-cine':['Cinema','When something big happens - an impact, a founding, a launch, a war, an eclipse - the camera goes to it for a few seconds with a title card, then comes back. Turn this off to keep the camera yours.'],
+ '#btn-cine':['Cinema','When something big happens - an impact, a founding, a launch, a war, an eclipse, a comet - time drops to quarter speed and the camera goes to it for a few seconds with a title card and its own sound, then comes back. Turn this off to keep the camera yours.'],
  '[data-layer="9"]':['Life','Which lineage holds each niche: sea, shore, forest, grassland, desert, ice, high country and air. Colours change as clades radiate and die out. 0 selects it.'],
  '#btn-sound':['Sound','A quiet drone keyed to the world you are looking at - thinner and higher on cold worlds, deep on gas giants - with a chime for each chronicle entry. Off by default. M toggles.'],
  '#map':['Map','Equirectangular projection of the current channel. Click anywhere to swing the camera there.'],
@@ -4002,7 +4002,7 @@ function warTick(dt){
       A.truce=A.truce||{};B.truce=B.truce||{};A.truce[B.id]=S.year+420;B.truce[A.id]=S.year+420;
       A.cells=A.cells.filter(i=>owner[i]===A.id);B.cells=B.cells.filter(i=>owner[i]===B.id);
       ev('civ',`<b>Peace of ${winner.cap}.</b> After ${Math.round(S.year-w.start)} years ${rulerName(winner)} and ${rulerName(loser)} set their seals: ${winner.title} keeps what it took; ${loser.title} cedes ${Math.round(Math.max(lossA,lossB)*100)}% of its land.`);
-      momentGeneric('PEACE','The Peace of '+winner.cap,winner.title+' and '+loser.title,winner.capital,2.4);
+      momentGeneric('PEACE','The Peace of '+winner.cap,winner.title+' and '+loser.title,winner.capital,2.4,'peace');
     }
   }
   S.wars=S.wars.filter(w=>w.alive||S.year-w.start<2000);
@@ -4323,7 +4323,8 @@ function cometPerihelion(c){
   const q=c.a*(1-c.e);
   const victims=SYS.planets.filter(p=>p.type!=='belt'&&p.type!=='gas'&&p.type!=='icegiant'&&Math.abs(p.a-q)<0.30);
   const f=curPlanet();
-  if(f&&f.type!=='gas'&&f.type!=='icegiant')ev('geo',`Comet <b>${c.name}</b> rounds the star, ${fmt(q,2)} AU out; its tail spans the evening sky of <b>${f.name}</b>.`);
+  if(f&&f.type!=='gas'&&f.type!=='icegiant'){ev('geo',`Comet <b>${c.name}</b> rounds the star, ${fmt(q,2)} AU out; its tail spans the evening sky of <b>${f.name}</b>.`);
+    cometPos(c,_cp);planetPos(f,_fp);const dir=_cp.clone().sub(_fp);if(dir.length()>0.01)momentSky('COMET',c.name,'perihelion '+fmt(q,2)+' AU from the star',dir,'comet');}
   if(victims.length&&Math.random()<0.14){
     const v=victims[(Math.random()*victims.length)|0];
     if(v===f&&!S.gas&&W.V){
@@ -4349,9 +4350,9 @@ function updateEclipse(){
     if(cosang>Math.cos(angR+0.032)){
       _tmp.copy(_md);globe.worldToLocal(_tmp);_tmp.normalize();
       U.uEclipse.value.set(_tmp.x,_tmp.y,_tmp.z,clamp((cosang-Math.cos(angR+0.032))/0.01,0,1));
-      U.uEclipseR.value=angR*1.6+0.05;
+      U.uEclipseR.value=angR*2.4+0.07;
       if(S.year-(m.lastEcl||-1e9)>400){m.lastEcl=S.year;ev('geo',`<b>${m.name}</b> crosses the face of the star. Day goes dim beneath its shadow.`);
-        momentGeneric('ECLIPSE',m.name+' crosses the star','the shadow sweeps '+placeOf(nearestVertex(_tmp.x,_tmp.y,_tmp.z)),nearestVertex(_tmp.x,_tmp.y,_tmp.z),2.8);}
+        momentGeneric('ECLIPSE',m.name+' crosses the star','the shadow sweeps '+placeOf(nearestVertex(_tmp.x,_tmp.y,_tmp.z)),nearestVertex(_tmp.x,_tmp.y,_tmp.z),3.0,'eclipse');}
       return;
     }
   }
@@ -4370,7 +4371,7 @@ function moonBaseTick(dt){
       m.base=c.title;p.sim.moonBases[i]=c.title;
       ev('civ',`<b>${c.title}</b> lands on <b>${m.name}</b> and stays: a base under the regolith, ${Math.round(m.radKm).toLocaleString()} km world all its own.`);
       buildSatLabels();
-      pushMoment({pri:2,dur:8,moon:m,kicker:'LANDING \u00b7 YR '+Math.round(S.year).toLocaleString(),title:m.name,sub:c.title+' establishes a base'});
+      pushMoment({pri:2,dur:8,moon:m,sfx:'land',kicker:'LANDING \u00b7 YR '+Math.round(S.year).toLocaleString(),title:m.name,sub:c.title+' establishes a base'});
     }
   });
 }
@@ -4487,6 +4488,30 @@ function soundTick(){
   for(const x of SND.osc)x.o.frequency.setTargetAtTime(base*x.mul,t,1.2);
   SND.filter.frequency.setTargetAtTime(S.gas?140:(220+clamp(S.bio,0,1)*220),t,1.5);
 }
+let noiseBuf=null;
+function sfx(kind){
+  if(!SND.on||!SND.ctx)return;
+  const ctx=SND.ctx,t=ctx.currentTime;
+  if(!noiseBuf){noiseBuf=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
+  const out=ctx.createGain();out.gain.value=0.9;out.connect(ctx.destination);
+  const noise=(dur,f0,f1,vol,type)=>{const src=ctx.createBufferSource();src.buffer=noiseBuf;const f=ctx.createBiquadFilter();f.type=type||'lowpass';f.frequency.setValueAtTime(f0,t);f.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+    const g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.03);g.gain.exponentialRampToValueAtTime(0.001,t+dur);src.connect(f);f.connect(g);g.connect(out);src.start(t);src.stop(t+dur+0.1);};
+  const tone=(type,f0,f1,dur,vol,delay,attack)=>{const o=ctx.createOscillator();o.type=type;const st=t+(delay||0);o.frequency.setValueAtTime(f0,st);if(f1)o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),st+dur);
+    const g=ctx.createGain();g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(vol,st+(attack||0.04));g.gain.exponentialRampToValueAtTime(0.001,st+dur);o.connect(g);g.connect(out);o.start(st);o.stop(st+dur+0.1);};
+  switch(kind){
+    case 'impact':noise(2.4,900,60,0.7);tone('sine',70,22,2.6,0.6);tone('triangle',180,40,0.6,0.25);break;
+    case 'launch':noise(7,120,1400,0.35,'bandpass');tone('sawtooth',38,150,7,0.16,0,1.5);tone('sine',55,220,7,0.12,0,2);break;
+    case 'land':noise(5,1200,80,0.3,'bandpass');tone('sawtooth',160,45,5,0.12,0,0.5);tone('sine',420,90,4.5,0.08);break;
+    case 'war':for(let k=0;k<5;k++){const src=ctx.createBufferSource();src.buffer=noiseBuf;const f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=220;const g=ctx.createGain();const st=t+k*0.42;g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(0.4,st+0.01);g.gain.exponentialRampToValueAtTime(0.001,st+0.35);src.connect(f);f.connect(g);g.connect(out);src.start(st);src.stop(st+0.4);}
+      tone('sine',196,0,1.6,0.14,0.05);tone('sine',147,0,1.6,0.12,0.9);break;
+    case 'eclipse':tone('sine',220,0,4.5,0.11,0,2.2);tone('sine',330,0,4.5,0.08,0.4,2.4);tone('triangle',110,0,5,0.07,0,3);break;
+    case 'found':[392,494,587,784].forEach((f,k)=>tone('sine',f,0,0.9,0.12,k*0.22));tone('triangle',196,0,2.2,0.06,0,0.3);break;
+    case 'peace':[262,330,392,523].forEach(f=>tone('sine',f,0,2.6,0.07,0,0.8));break;
+    case 'comet':{const o=ctx.createOscillator();o.type='sine';o.frequency.value=1180;const l=ctx.createOscillator();l.frequency.value=5.5;const lg=ctx.createGain();lg.gain.value=18;l.connect(lg);lg.connect(o.frequency);
+      const g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.07,t+1.2);g.gain.exponentialRampToValueAtTime(0.001,t+3.5);o.connect(g);g.connect(out);o.start(t);l.start(t);o.stop(t+3.6);l.stop(t+3.6);
+      noise(3,3000,8000,0.05,'highpass');break;}
+  }
+}
 function chime(kind){
   if(!SND.on||!SND.ctx)return;
   const t=SND.ctx.currentTime;if(t-SND.lastChime<0.22)return;SND.lastChime=t;
@@ -4520,6 +4545,30 @@ function flyTo(i,dist,rate){
   cam.tTheta=cam.theta+dth;cam.tPhi=t.phi;if(dist)cam.tDist=dist;
   cam.rate=rate||1.6;
 }
+function flyToOffset(i,off,dist,rate){
+  const t=targetSpherical(i,{});
+  let dth=(t.theta+off)-cam.theta;dth=Math.atan2(Math.sin(dth),Math.cos(dth));
+  cam.tTheta=cam.theta+dth;cam.tPhi=clamp(t.phi-off*0.35,0.12,3.02);if(dist)cam.tDist=dist;cam.rate=rate||1.4;
+}
+function flyToLimb(i,dist,frac,rate){
+  const t=targetSpherical(i,{});
+  const halfH=Math.atan(Math.tan(camera.fov*Math.PI/360)*camera.aspect);
+  const want=halfH*(frac||0.7);
+  let o=0.3;
+  for(let k=0;k<12;k++){const th=Math.atan2(Math.sin(o),dist-Math.cos(o));o+=(want-th)*0.8;o=clamp(o,0.05,1.3);}
+  let dth=(t.theta+o)-cam.theta;dth=Math.atan2(Math.sin(dth),Math.cos(dth));
+  cam.tTheta=cam.theta+dth;cam.tPhi=clamp(t.phi-o*0.18,0.12,3.02);cam.tDist=dist;cam.rate=rate||1.4;
+}
+function aimSky(dirWorld,dist,rate){
+  const D=dirWorld.clone().normalize();
+  let perp=new THREE.Vector3(0,1,0).cross(D);if(perp.length()<0.1)perp.set(1,0,0).cross(D);perp.normalize();
+  const a=0.32;
+  const C=D.clone().multiplyScalar(-Math.cos(a)).addScaledVector(perp,Math.sin(a));
+  C.applyQuaternion(axisGroup.quaternion.clone().invert());
+  const sph=new THREE.Spherical().setFromVector3(C);
+  let dth=sph.theta-cam.theta;dth=Math.atan2(Math.sin(dth),Math.cos(dth));
+  cam.tTheta=cam.theta+dth;cam.tPhi=clamp(sph.phi,0.12,3.02);cam.tDist=dist||6.5;cam.rate=rate||1.2;
+}
 function cineCard(kicker,title,sub){
   const c=el('cine');
   el('cine-k').textContent=kicker;el('cine-t').textContent=title;el('cine-s').textContent=sub||'';
@@ -4535,12 +4584,16 @@ function pushMoment(m){
 }
 function startMoment(m){
   CINE.active=m;m.t=0;
-  CINE.saved={dist:cam.tDist,phi:cam.tPhi,spin:S.spin,speed:S.speed,layer:S.layer};
-  S.spin=0;
-  if(m.speed!==undefined)S.speed=Math.min(S.speed,m.speed);
+  CINE.saved={dist:cam.tDist,phi:cam.tPhi,spin:S.spin,speed:S.speed,layer:S.layer,playing:S.playing};
+  S.spin=0;S.playing=true;
+  S.speed=m.speed!==undefined?m.speed:0.25;
   if(m.layer!==undefined){U.uLayer.value=m.layer;}
-  if(m.cell!==undefined)flyTo(m.cell,m.dist||2.1,m.rate||1.4);
+  if(m.cell!==undefined&&m.limb)flyToLimb(m.cell,m.dist||2.4,m.limb,m.rate||1.4);
+  else if(m.cell!==undefined&&m.offset)flyToOffset(m.cell,m.offset,m.dist||1.8,m.rate||1.4);
+  else if(m.cell!==undefined)flyTo(m.cell,m.dist||2.1,m.rate||1.4);
+  else if(m.skyDir)aimSky(m.skyDir,m.dist||6.5,m.rate||1.2);
   else if(m.moon){enterMoonView(m.moon);}
+  if(m.sfx)sfx(m.sfx);
   document.body.classList.add('cinebars');
   cineCard(m.kicker,m.title,m.sub);
   if(m.fx)m.fx();
@@ -4550,7 +4603,7 @@ function endMoment(){
   CINE.active=null;CINE.cool=10;
   cineHide();
   if(m.moon)exitMoonView();
-  if(CINE.saved){cam.tDist=CINE.saved.dist;cam.tPhi=CINE.saved.phi;S.spin=CINE.saved.spin;S.speed=CINE.saved.speed;
+  if(CINE.saved){cam.tDist=CINE.saved.dist;cam.tPhi=CINE.saved.phi;S.spin=CINE.saved.spin;S.speed=CINE.saved.speed;S.playing=CINE.saved.playing;
     U.uLayer.value=CINE.saved.layer;cam.rate=1.6;syncSpinBtn();}
   if(m.after)m.after();
 }
@@ -4573,10 +4626,11 @@ function userInput(){
 }
 
 /* ---------- particles ---------- */
-const FX={n:0,max:360,pos:null,vel:null,life:null,col:null,pts:null};
+const FX={n:0,max:520,pos:null,vel:null,life:null,col:null,pts:null,scale:null,grav:null};
 (function(){
   const g=new THREE.BufferGeometry();
   FX.pos=new Float32Array(FX.max*3);FX.vel=new Float32Array(FX.max*3);FX.life=new Float32Array(FX.max);FX.col=new Float32Array(FX.max*3);
+  FX.scale=new Float32Array(FX.max).fill(1);FX.grav=new Float32Array(FX.max).fill(1);
   const sz=new Float32Array(FX.max);
   g.setAttribute('position',new THREE.BufferAttribute(FX.pos,3));
   g.setAttribute('aSize',new THREE.BufferAttribute(sz,1));
@@ -4586,11 +4640,12 @@ const FX={n:0,max:360,pos:null,vel:null,life:null,col:null,pts:null};
   FX.pts.frustumCulled=false;
   globe.add(FX.pts);
 })();
-function spawnFx(i,count,speed,col,life,up){
+function spawnFx(i,count,speed,col,life,up,scale,grav,radius){
   const p=W.geo.pos;const dx=p[i*3],dy=p[i*3+1],dz=p[i*3+2];
-  const r=1+Math.max(W.elev[i],U.uSea.value)*RELIEF_UNIT*U.uRelief.value;
+  const r=radius||(1+Math.max(W.elev[i],U.uSea.value)*RELIEF_UNIT*U.uRelief.value);
   for(let k=0;k<count;k++){
     const j=FX.n%FX.max;FX.n++;
+    FX.scale[j]=scale||1;FX.grav[j]=grav===undefined?1:grav;
     FX.pos[j*3]=dx*r;FX.pos[j*3+1]=dy*r;FX.pos[j*3+2]=dz*r;
     const rx=(Math.random()-0.5),ry=(Math.random()-0.5),rz=(Math.random()-0.5);
     const s=speed*(0.3+Math.random());
@@ -4608,12 +4663,13 @@ function fxTick(dt){
     let x=FX.pos[j*3],y=FX.pos[j*3+1],z=FX.pos[j*3+2];
     const l=Math.hypot(x,y,z)||1;
     // fall back toward the surface
-    FX.vel[j*3]-=x/l*0.35*dt;FX.vel[j*3+1]-=y/l*0.35*dt;FX.vel[j*3+2]-=z/l*0.35*dt;
+    const gg=0.35*dt*FX.grav[j];
+    FX.vel[j*3]-=x/l*gg;FX.vel[j*3+1]-=y/l*gg;FX.vel[j*3+2]-=z/l*gg;
     x+=FX.vel[j*3]*dt;y+=FX.vel[j*3+1]*dt;z+=FX.vel[j*3+2]*dt;
     const l2=Math.hypot(x,y,z);
     if(l2<1.0){const f=1.0/l2;x*=f;y*=f;z*=f;FX.vel[j*3]*=0.2;FX.vel[j*3+1]*=0.2;FX.vel[j*3+2]*=0.2;}
     FX.pos[j*3]=x;FX.pos[j*3+1]=y;FX.pos[j*3+2]=z;
-    FX.size[j]=(0.0035+0.006*Math.min(1,FX.life[j]))*cam.dist;
+    FX.size[j]=(0.0035+0.006*Math.min(1,FX.life[j]))*cam.dist*FX.scale[j];
   }
   pa.needsUpdate=true;sz.needsUpdate=true;FX.pts.visible=any;
 }
@@ -4622,37 +4678,85 @@ function flash(strength){
   requestAnimationFrame(()=>{f.style.transition='opacity 1.4s ease-out';f.style.opacity='0';});
 }
 let shake=0;
+const SHOCK_FRAG=`precision highp float;varying vec2 vUv;uniform float uT;
+void main(){float r=length(vUv-0.5)*2.0;float ring=smoothstep(0.55,0.95,r)*(1.0-smoothstep(0.95,1.0,r));
+ float a=ring*(1.0-uT)*0.9;gl_FragColor=vec4(vec3(1.0,0.78,0.5)*a*1.6,a);}`;
+const SHOCK_VERT=`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+const shockMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({vertexShader:SHOCK_VERT,fragmentShader:SHOCK_FRAG,
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,uniforms:{uT:{value:1}}}));
+shockMesh.visible=false;shockMesh.renderOrder=3;globe.add(shockMesh);
+let shockT=1,shockR=0.3;
+function shockwave(i,radius){
+  const p=W.geo.pos;const n=new THREE.Vector3(p[i*3],p[i*3+1],p[i*3+2]);
+  const r=1.004+Math.max(W.elev[i],U.uSea.value)*RELIEF_UNIT*U.uRelief.value;
+  shockMesh.position.copy(n).multiplyScalar(r);shockMesh.lookAt(n.clone().multiplyScalar(3));
+  shockT=0;shockR=radius||0.3;shockMesh.visible=true;
+}
+function shockTick(dt){
+  if(!shockMesh.visible)return;
+  shockT+=dt*0.42;if(shockT>=1){shockMesh.visible=false;return;}
+  const sc=0.02+shockR*Math.pow(shockT,0.6);shockMesh.scale.set(sc,sc,1);shockMesh.material.uniforms.uT.value=shockT;
+}
 
 /* ---------- moments for the things that happen ---------- */
 function momentImpact(i,km){
-  pushMoment({pri:4,dur:9,cell:i,dist:1.9,rate:2.2,speed:1,
+  pushMoment({pri:4,dur:11,cell:i,dist:1.9,rate:2.2,sfx:'impact',
     kicker:'IMPACT \u00b7 YR '+Math.round(S.year).toLocaleString(),title:W.pname,sub:fmt(km*0.006,1)+' km bolide \u00b7 '+placeOf(i),
-    fx:()=>{flash(0.9);shake=1.2;
-      spawnFx(i,120,0.45,[[1.0,0.55,0.2],[1.0,0.85,0.5],[0.6,0.5,0.45],[0.35,0.3,0.28]],5,1.2);
-      spawnFx(i,70,0.2,[[0.5,0.45,0.4],[0.3,0.28,0.26]],8,0.6);},
-    tick:(dt)=>{if(Math.random()<dt*4)spawnFx(i,6,0.08,[[0.4,0.35,0.3]],5,1.0);}});
+    fx:()=>{flash(0.9);shake=1.4;shockwave(i,0.22+km/9000);
+      spawnFx(i,150,0.5,[[1.0,0.55,0.2],[1.0,0.85,0.5],[0.6,0.5,0.45],[0.35,0.3,0.28]],6,1.2,1.6);
+      spawnFx(i,80,0.14,[[0.32,0.28,0.25],[0.22,0.2,0.19],[0.28,0.24,0.2]],12,0.5,1.4,0.25);},
+    tick:(dt)=>{const m=CINE.active;if(m.t<5&&Math.random()<dt*8)spawnFx(i,3,0.06,[[0.3,0.26,0.22]],8,1.0,1.3,0.2);}});
 }
 function momentLaunch(i,title,to){
-  pushMoment({pri:2,dur:8,cell:i,dist:2.3,rate:1.4,
+  const p=W.geo.pos;const n=new THREE.Vector3(p[i*3],p[i*3+1],p[i*3+2]);
+  let east=new THREE.Vector3(0,1,0).cross(n);if(east.length()<0.1)east.set(1,0,0).cross(n);east.normalize();
+  pushMoment({pri:2,dur:12,cell:i,limb:0.72,dist:2.4,rate:1.6,sfx:'launch',
     kicker:'LAUNCH \u00b7 YR '+Math.round(S.year).toLocaleString(),title:title,sub:'bound for '+to,
-    tick:(dt)=>{const m=CINE.active;const t=clamp(m.t/5,0,1);
-      if(t<1&&Math.random()<dt*40){spawnFx(i,1,0,[[1,0.9,0.7]],1.6,0);const j=(FX.n-1)%FX.max;
-        const p=W.geo.pos;const h=1.02+t*0.9;FX.pos[j*3]=p[i*3]*h;FX.pos[j*3+1]=p[i*3+1]*h;FX.pos[j*3+2]=p[i*3+2]*h;FX.vel[j*3]=0;FX.vel[j*3+1]=0;FX.vel[j*3+2]=0;}}});
+    fx:()=>{spawnFx(i,50,0.05,[[0.75,0.72,0.68],[0.6,0.58,0.55]],5,0.8,2.2,0.2);},
+    tick:(dt)=>{const m=CINE.active;const t=m.t-1.6;if(t<0||t>8.5)return;
+      const u=t/8.5;const h=1.006+0.62*u*u+0.04*u;const side=0.55*u*u;
+      const pos=n.clone().multiplyScalar(h).addScaledVector(east,side);
+      const r=pos.length();const dir=pos.clone().normalize();
+      // the vehicle
+      spawnFx(i,1,0,[[1,0.95,0.85]],0.12,0,4.5,0);let j=(FX.n-1)%FX.max;FX.pos[j*3]=pos.x;FX.pos[j*3+1]=pos.y;FX.pos[j*3+2]=pos.z;
+      // exhaust
+      const nex=Math.max(1,Math.round(dt*160));
+      for(let k=0;k<nex;k++){spawnFx(i,1,0,[[1,0.6,0.2],[1,0.85,0.45],[0.8,0.75,0.7]],1.6,0,2.0+Math.random(),0.15);j=(FX.n-1)%FX.max;
+        FX.pos[j*3]=pos.x+(Math.random()-0.5)*0.004;FX.pos[j*3+1]=pos.y+(Math.random()-0.5)*0.004;FX.pos[j*3+2]=pos.z+(Math.random()-0.5)*0.004;
+        FX.vel[j*3]=-dir.x*0.06+(Math.random()-0.5)*0.03;FX.vel[j*3+1]=-dir.y*0.06+(Math.random()-0.5)*0.03;FX.vel[j*3+2]=-dir.z*0.06+(Math.random()-0.5)*0.03;}
+      if(m.t<2.4&&Math.random()<dt*30)spawnFx(i,3,0.04,[[0.8,0.78,0.74]],5,0.6,2.5,0.3);}});
+}
+function momentLand(i,title,sub){
+  const p=W.geo.pos;const n=new THREE.Vector3(p[i*3],p[i*3+1],p[i*3+2]);
+  pushMoment({pri:2,dur:10,cell:i,limb:0.55,dist:2.2,rate:1.5,sfx:'land',
+    kicker:'LANDFALL \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub,
+    tick:(dt)=>{const m=CINE.active;const t=m.t-1.2;if(t<0||t>6)return;const u=1-t/6;const h=1.006+0.5*u*u;
+      const pos=n.clone().multiplyScalar(h);
+      spawnFx(i,1,0,[[1,0.95,0.85]],0.12,0,3.5,0);let j=(FX.n-1)%FX.max;FX.pos[j*3]=pos.x;FX.pos[j*3+1]=pos.y;FX.pos[j*3+2]=pos.z;
+      const nex=Math.max(1,Math.round(dt*90));
+      for(let k=0;k<nex;k++){spawnFx(i,1,0,[[0.7,0.8,1.0],[0.9,0.9,1.0]],1.0,0,1.3,0.1);j=(FX.n-1)%FX.max;
+        FX.pos[j*3]=pos.x;FX.pos[j*3+1]=pos.y;FX.pos[j*3+2]=pos.z;const d=pos.clone().normalize();
+        FX.vel[j*3]=-d.x*0.05+(Math.random()-0.5)*0.02;FX.vel[j*3+1]=-d.y*0.05+(Math.random()-0.5)*0.02;FX.vel[j*3+2]=-d.z*0.05+(Math.random()-0.5)*0.02;}
+      if(u<0.08&&Math.random()<dt*40)spawnFx(i,4,0.05,[[0.75,0.7,0.62]],4,0.5,2.0,0.3);}});
 }
 function momentCity(i,title,sub){
-  pushMoment({pri:2,dur:8,cell:i,dist:1.8,rate:1.2,kicker:'FOUNDING \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
+  pushMoment({pri:2,dur:9,cell:i,dist:1.75,rate:1.2,sfx:'found',kicker:'FOUNDING \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub,
+    tick:(dt)=>{const m=CINE.active;if(m.t>1&&m.t<7&&Math.random()<dt*12)spawnFx(i,6,0.08,[[1,0.85,0.4],[1,0.7,0.3],[1,1,0.8]],1.6,1.4,1.4,0.6);}});
 }
 function momentFront(i,title,sub){
-  pushMoment({pri:3,dur:9,cell:i,dist:2.0,rate:1.5,layer:6,kicker:'WAR \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub,
-    tick:(dt)=>{if(S.civs.length&&Math.random()<dt*30)sparkFront(2);}});
+  pushMoment({pri:3,dur:10,cell:i,dist:1.95,rate:1.5,layer:6,sfx:'war',kicker:'WAR \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub,
+    tick:(dt)=>{if(S.civs.length&&Math.random()<dt*60)sparkFront(3);if(Math.random()<dt*2.5){flash(0.08);}}});
 }
-function momentGeneric(kicker,title,sub,cell,dist){
-  pushMoment({pri:1,dur:7,cell,dist:dist||2.6,rate:1.3,kicker:kicker+' \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
+function momentGeneric(kicker,title,sub,cell,dist,sfxName){
+  pushMoment({pri:1,dur:8,cell,dist:dist||2.6,rate:1.3,sfx:sfxName,kicker:kicker+' \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
+}
+function momentSky(kicker,title,sub,dirWorld,sfxName){
+  pushMoment({pri:2,dur:10,skyDir:dirWorld.clone(),dist:6.5,rate:1.1,sfx:sfxName,kicker:kicker+' \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
 }
 function sparkFront(n){
   if(!S.border)return;
   for(let k=0;k<n;k++){
-    for(let t=0;t<40;t++){const i=(Math.random()*W.V)|0;if(S.border[i]>1.5){spawnFx(i,3,0.05,[[1,0.5,0.25],[1,0.85,0.5]],0.9,1.0);break;}}
+    for(let t=0;t<40;t++){const i=(Math.random()*W.V)|0;if(S.border[i]>1.5){spawnFx(i,3,0.06,[[1,0.5,0.25],[1,0.85,0.5],[1,1,0.9]],0.8,1.2,2.2,0.5);break;}}
   }
 }
 
@@ -4905,7 +5009,7 @@ function simulate(dt){
     if(tgt.sim){
       if(tgt===curPlanet()&&!S.gas&&S.hab&&tgt.sim.cap>0){
         const i=bestSite();
-        if(i>=0){const c=spawnCiv(i);if(c){c.title=title+" Colony";c.tech=2.6;c.era=eraOf(2.6);c.cap=W.lex.word(2,2);addCityLabels();momentCity(i,c.title,'landfall at '+placeOf(i));}}
+        if(i>=0){const c=spawnCiv(i);if(c){c.title=title+" Colony";c.tech=2.6;c.era=eraOf(2.6);c.cap=W.lex.word(2,2);addCityLabels();momentLand(i,c.title,'landfall at '+placeOf(i));}}
       }else{
         tgt.sim.civs.push({id:tgt.sim.civs.length+1,name:title.split(' ')[0],title:title+(tgt.sim.cap>0?" Colony":" Outpost"),alive:true,tech:2.6,era:eraOf(2.6),
           pop:0.5,share:0.01,born:S.year,cities:1,launched:1,cap:SYS.lex.word(2,2)});
@@ -4998,13 +5102,13 @@ function frame(){
   U.uStrength.value=(S.toggles.aurora?1:0)*clamp(0.5+Math.sin(now*0.0004)*0.5,0.25,1);
   // moons
   for(const m of moons){
-    const a=now*0.00007*m.speed*(0.4+S.speed*0.12)+m.phase;
+    const a=S.sysT*0.075*m.speed+m.phase;
     m.mesh.position.set(Math.cos(a)*m.r,Math.sin(a)*m.r*Math.sin(m.inc),Math.sin(a)*m.r*Math.cos(m.inc));
     m.mesh.rotation.y=a*0.6;
   }
   if(S.mode==='world'){updateSky();updateSatellites();}
   updateCompanion();updateComets();updateEclipse();
-  cineTick(dt);fxTick(dt);
+  cineTick(dt);fxTick(dt);shockTick(dt);
   if(S.attract&&!S.tour&&S.lastInput&&now-S.lastInput>90000&&W.V&&!el('help').classList.contains('show'))startTour();
   // animations
   if(formAnim){
