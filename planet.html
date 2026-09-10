@@ -260,6 +260,23 @@ button.primary:hover{background:rgba(232,163,61,.12)}
 .cev b{font-weight:400;color:#E4E7EE}
 .cev.civ{border-left-color:#7A5B2A}.cev.life{border-left-color:#2F6A5F}.cev.cat{border-left-color:#7C3524}.cev.geo{border-left-color:#6A5540}
 
+/* ---------- cinema ---------- */
+#flash{position:fixed;inset:0;z-index:9;background:#fff8e8;opacity:0;pointer-events:none}
+body.cinebars::before,body.cinebars::after{content:"";position:fixed;left:0;right:0;height:7vh;background:#000;z-index:6;pointer-events:none;
+  animation:barsin .8s ease}
+body.cinebars::before{top:0}body.cinebars::after{bottom:0}
+@keyframes barsin{from{height:0}to{height:7vh}}
+#cine{position:fixed;left:50%;bottom:calc(7vh + 76px);transform:translateX(-50%);z-index:8;pointer-events:none;
+  text-align:center;opacity:0;transition:opacity .6s;max-width:min(80vw,760px)}
+#cine.show{opacity:1}
+#cine-k{font-family:var(--mono);font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+#cine-t{font-family:var(--serif);font-weight:300;font-size:38px;letter-spacing:.04em;color:#F1F2F6;line-height:1.05;text-shadow:0 2px 24px #000}
+#cine-s{font-family:var(--serif);font-style:italic;font-size:14px;color:rgba(200,206,220,.85);margin-top:6px;text-shadow:0 1px 10px #000}
+body.hidehud #cine{bottom:calc(7vh + 28px)}
+#tourhint{position:fixed;right:22px;top:calc(7vh + 14px);z-index:8;font-family:var(--mono);font-size:9px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--faint);display:none;pointer-events:none}
+body.touring #tourhint{display:block}
+
 /* ---------- field guide ---------- */
 #help{position:fixed;inset:0;z-index:30;background:rgba(4,5,8,.88);
   -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
@@ -347,7 +364,7 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
         <div class="ctrl">
           <span class="lbl">Seed phrase</span>
           <div id="seedrow">
-            <input id="seed" spellcheck="false" value="AURELIA-7">
+            <input id="seed" spellcheck="false" value="DEMIURGE">
             <button id="btn-roll" title="Random seed">&#x27F3;</button>
           </div>
         </div>
@@ -431,6 +448,7 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
             <button data-layer="6">Political</button>
             <button data-layer="7">Habitability</button>
             <button data-layer="8">Currents</button>
+            <button data-layer="9">Life</button>
           </div>
         </div>
         <div class="ctrl"><span class="lbl">Overlays</span>
@@ -577,6 +595,8 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
       <button id="btn-spin" class="on">&#x21BB; Spin</button>
       <button id="btn-help" class="primary" title="Field guide (?)">? Guide</button>
       <button id="btn-sound">&#x266A; Sound</button>
+      <button id="btn-cine" class="on">&#x25A3; Cinema</button>
+      <button id="btn-tour" class="primary">&#x25B7; Tour</button>
       <button id="btn-back" hidden>&#x21A9; Planet</button>
     </div>
   </div>
@@ -591,6 +611,10 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
     <div id="codexbody"></div>
   </div>
 </div>
+
+<div id="flash"></div>
+<div id="cine"><div id="cine-k"></div><div id="cine-t"></div><div id="cine-s"></div></div>
+<div id="tourhint">Tour &#x00B7; any key to stop</div>
 
 <div id="help" role="dialog" aria-modal="true" aria-labelledby="helptitle">
   <div id="helpbox">
@@ -626,6 +650,7 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
           <dl class="hrow"><dt>H</dt><dd>Hide every panel for a clean view.</dd></dl>
           <dl class="hrow"><dt>G / R / ?</dt><dd>Graticule, new random seed, this guide.</dd></dl>
           <dl class="hrow"><dt>C / M / Esc</dt><dd>Codex, sound, leave a moon or close an overlay.</dd></dl>
+          <dl class="hrow"><dt>T / 0</dt><dd>Start or stop the tour; the Life channel.</dd></dl>
         </section>
 
         <section class="hsec">
@@ -697,7 +722,10 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
           <h3>Time and the chronicle</h3>
           <p class="hnote">Time runs in chronicle years. Life crosses its thresholds in the first thousand or so; the first polity appears after about 1,200 years, once the biosphere can support it. Run at 8x or 60x to get there, then drop back to 1x to watch borders move.</p>
           <dl class="hrow"><dt>Orbital forcing</dt><dd>Milankovitch wobbles in tilt, insolation and greenhouse. Left on, ice ages arrive by themselves, sea level falls as ice locks up water, and land bridges open. The timeline shows it.</dd></dl>
-          <dl class="hrow"><dt>Registry</dt><dd>Living polities with territory, population and technological era \u2014 neolithic through to orbital.</dd></dl>
+          <dl class="hrow"><dt>Registry</dt><dd>Living polities with territory, population and technological era \u2014 neolithic through to orbital \u2014 and who rules each one.</dd></dl>
+          <dl class="hrow"><dt>Rulers</dt><dd>Every polity has a named sovereign, consul, marshal or premier who reigns, wages the wars, presides over the golden ages, dies, and earns an epithet. Successions are usually quiet; sometimes they are not.</dd></dl>
+          <dl class="hrow"><dt>Cinema</dt><dd>Big events pull the camera to them briefly with a title card: impacts with ejecta, launches climbing to orbit, sparks along a war front, an eclipse shadow. The <b>Tour</b> button chains a whole sequence and travels between worlds; it also starts on its own if the terminal is left idle.</dd></dl>
+          <dl class="hrow"><dt>Tree of life</dt><dd>Life radiates from the sea into the shore, the forests and plains, the deserts, the ice, the peaks and the air, one lineage descending from another. Ice ages, heat, impacts and snowball events cull it. The first land lineage to reach sapience founds the first polity. The <b>Life</b> channel maps who holds each niche; the codex prints the whole tree.</dd></dl>
           <dl class="hrow"><dt>Chronicle</dt><dd>Written as it happens. Amber entries are civilisations, green are biological, brown geological, red catastrophic.</dd></dl>
           <dl class="hrow"><dt>Timeline</dt><dd>Global mean temperature in amber over an ice-cover band in teal; ticks mark living polities. <b>Drag across it</b> to scrub history: borders and climate rewind to that year. Press play to return to the present.</dd></dl>
           <dl class="hrow"><dt>Wars</dt><dd>Declared, fought along a front that glows red in every channel, and ended by a peace that redraws the border. Trade routes between polities at peace show as teal lanes; roads between a polity's own cities are amber.</dd></dl>
@@ -1337,6 +1365,7 @@ varying float vE,vRain,vFlow,vPlate,vStress,vOwner,vPop,vBorder,vVar,vClim;
 uniform vec3 uSun,uCam,uAtmoCol,uLifeCol,uNations[16];
 uniform float uCurrK,uTide,uEclipseR;
 uniform vec4 uEclipse;
+uniform vec4 uClade[8];
 uniform float uSea,uRelief,uSolar,uGreen,uTilt,uSeason,uSunLat,uTime,uUnit;
 uniform float uLayer,uGrid,uLights,uNight,uPlateCount,uSnowball,uQual;
 
@@ -1450,11 +1479,26 @@ void main(){
     float hab=clamp((1.0-abs(T-19.0)/26.0),0.0,1.0)*clamp(M*2.2,0.0,1.0)*land;
     col=ramp(hab,vec3(0.09,0.06,0.14),vec3(0.35,0.10,0.33),vec3(0.72,0.22,0.30),vec3(0.94,0.62,0.18),vec3(0.98,0.96,0.62));
     col=mix(vec3(0.03,0.05,0.09),col,land*0.9+0.1);
-  } else {
+  } else if(uLayer<8.5){
     float a=clamp(vClim/8.0,-1.0,1.0);
     col=a<0.0?mix(vec3(0.20,0.24,0.30),vec3(0.16,0.42,0.86),-a):mix(vec3(0.20,0.24,0.30),vec3(0.92,0.36,0.14),a);
     col*=mix(1.0,0.55,land);
     col=mix(col,vec3(0.06,0.07,0.09),land*step(abs(vClim),0.15));
+  } else {
+    float h=e-uSea;
+    int cls=0;
+    if(land<0.5)cls=0;
+    else if(h<0.02)cls=1;
+    else if(T<-2.0)cls=5;
+    else if(h>0.30)cls=6;
+    else if(M>0.45&&T>4.0)cls=2;
+    else if(M<0.16&&T>4.0)cls=4;
+    else cls=3;
+    vec4 cc=vec4(0.0);
+    for(int i=0;i<8;i++){ if(i==cls) cc=uClade[i]; }
+    vec3 base=mix(vec3(0.03,0.05,0.09),vec3(0.11,0.12,0.13),land);
+    col=mix(base,cc.rgb*(0.55+0.45*fbm3(dir*9.0,2)),cc.a);
+    if(uClade[7].a>0.5&&land>0.5&&cls==2)col=mix(col,uClade[7].rgb,0.25*smoothstep(0.5,0.9,vnoise(dir*40.0)));
   }
   // ---- lighting ----
   vec3 L=normalize(uSun);
@@ -1651,7 +1695,7 @@ const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"h
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(30,1,0.08,260);
-const cam={theta:0.6,phi:1.15,dist:4.2,tTheta:0.6,tPhi:1.15,tDist:4.2};
+const cam={theta:0.6,phi:1.15,dist:4.2,tTheta:0.6,tPhi:1.15,tDist:4.2,rate:1.6};
 
 const ATMO_COLORS=[new THREE.Color(0.32,0.52,0.92),new THREE.Color(0.85,0.55,0.38),
                    new THREE.Color(0.55,0.78,0.45),new THREE.Color(0.72,0.85,0.35)];
@@ -1661,6 +1705,7 @@ const U={
   uSunW:{value:new THREE.Vector3(1,0,0)}, uCamW:{value:new THREE.Vector3()},
   uSunLat:{value:0}, uCurrK:{value:1}, uTide:{value:0.3}, uCloudFade:{value:1},
   uEclipse:{value:new THREE.Vector4(0,1,0,0)}, uEclipseR:{value:0.1},
+  uClade:{value:Array.from({length:8},()=>new THREE.Vector4(0,0,0,0))},
   uAtmoCol:{value:ATMO_COLORS[0].clone()},
   uSea:{value:0}, uRelief:{value:1}, uMorph:{value:0}, uForm:{value:0}, uUnit:{value:RELIEF_UNIT},
   uSolar:{value:1}, uGreen:{value:0}, uTilt:{value:23.4*Math.PI/180}, uSeason:{value:0},
@@ -1676,7 +1721,7 @@ const planetMat=new THREE.ShaderMaterial({
   vertexShader:PLANET_VERT,fragmentShader:PLANET_FRAG,
   uniforms:pick("uSun","uCam","uAtmoCol","uNations","uSea","uRelief","uMorph","uForm","uUnit",
                 "uSolar","uGreen","uTilt","uSeason","uSunLat","uTime","uLayer","uGrid","uLights","uNight",
-                "uPlateCount","uLifeCol","uSnowball","uQual","uCurrK","uTide","uEclipse","uEclipseR")
+                "uPlateCount","uLifeCol","uSnowball","uQual","uCurrK","uTide","uEclipse","uEclipseR","uClade")
 });
 let planetMesh=null, riverMesh=null;
 
@@ -1775,7 +1820,7 @@ sunPt.renderOrder=-1;sunPt.position.set(120,0,0);scene.add(sunPt);
 const S={ owner:null,pop:null,hab:null,border:null,vvar:null,
   civs:[],year:0,bio:0,stage:0,speed:1,playing:true,layer:0,
   tool:"scan",brush:0.07,impactWinter:0,driftT:0,morphing:0,spin:0,qual:2,
-  mode:null,sysT:0,gas:false,orbital:1,effSolar:1,effGreen:0,effTilt:23.4,lastSeaEv:0,iceState:"",
+  mode:null,sysT:0,gas:false,orbital:1,cine:1,attract:1,tour:false,lastInput:0,effSolar:1,effGreen:0,effTilt:23.4,lastSeaEv:0,iceState:"",
   toggles:{clouds:1,atmo:1,rivers:1,lights:1,grid:0,labels:1,rings:0,moons:1,aurora:1},
   dayAngle:0.6,seasonPhase:0,arch:"terran",atmo:0,gmt:14,pending:null };
 
@@ -1979,6 +2024,7 @@ function spawnCiv(seedIdx,parent){
     cap:W.lex.word(2,2)};
   S.owner[seedIdx]=id;S.pop[seedIdx]=0.3;
   S.civs.push(c);
+  newRuler(c);
   return c;
 }
 const ERAS=["neolithic","bronze","iron","classical","mercantile","industrial","atomic","information","orbital"];
@@ -2012,12 +2058,14 @@ function launchColony(c){
   c.launched=1;
   SYS.transits.push({from:SYS.focus,to:target.idx,t0:S.year,dur:120+Math.random()*220,civ:c.id});
   ev('civ',"<b>"+c.title+"</b> launches a crewed vessel toward <b>"+target.name+"</b>, "+
-     fmt(Math.abs(target.a-SYS.planets[SYS.focus].a),2)+" AU across.");
+     fmt(Math.abs(target.a-SYS.planets[SYS.focus].a),2)+" AU across, "+(c.ruler?"at the order of "+rulerName(c):"")+".");
+  momentLaunch(c.capital,c.title,target.name);
 }
 function civTick(dt){
   const nbr=W.geo.nbr,nct=W.geo.nct,hab=S.hab,owner=S.owner,pop=S.pop;
   const live=S.civs.filter(c=>c.alive);
   for(const c of live){
+    rulerTick(c,dt);
     // keep the frontier alive: every so often rebuild it from the cells that touch something else
     c.frontAge=(c.frontAge||0)+1;
     if(c.front.length<24||c.frontAge>12){
@@ -2087,7 +2135,7 @@ function civTick(dt){
       ev('civ',"<b>"+c.title+"</b> enters its "+ERAS[era]+" age"+
         (era>=5?" \u2014 "+R(["furnaces darken the sky over its cities","the first railways cross the interior",
           "population doubles in a century","its fleets map every coast"])+".":"."));
-      if(era>=8)addSatellites(curPlanet(),c,2);
+      if(era>=8){addSatellites(curPlanet(),c,2);momentGeneric('ORBIT',c.title+' reaches orbit',rulerName(c),c.capital,1.9);}
     }
     const cityStep=Math.max(55,W.V*Math.max(0.02,S.landFrac)*0.035);
     if(n>(c.cities.length+1)*cityStep&&c.cities.length<8){
@@ -2098,12 +2146,13 @@ function civTick(dt){
     // fortunes
     if(Math.random()<0.0016*dt){
       const roll=Math.random();
-      if(roll<0.22){c.golden++;c.tech+=0.12;
-        ev('civ',`A golden age in <b>${c.title}</b>: ${R(['aqueducts reach the dry interior','the grinding of lenses is perfected','movable type spreads from the temple schools','the orbits are computed and published','inoculation halves infant mortality','pressurised steam turns its first wheel','algebraic notation is standardised','the coastline is surveyed to the metre'])}.`);}
+      if(roll<0.22){c.golden++;c.tech+=0.12;if(c.ruler)c.ruler.golden++;
+        ev('civ',`Under ${rulerName(c)}, a golden age in <b>${c.title}</b>: ${R(['aqueducts reach the dry interior','the grinding of lenses is perfected','movable type spreads from the temple schools','the orbits are computed and published','inoculation halves infant mortality','pressurised steam turns its first wheel','algebraic notation is standardised','the coastline is surveyed to the metre'])}.`);}
       else if(roll<0.40){
         const kill=0.25+Math.random()*0.4;
         for(let s=0;s<n;s++)pop[c.cells[s]]*=(1-kill*0.7);
-        ev('cat',`Plague sweeps <b>${c.title}</b>; ${Math.round(kill*100)}% of its people die.`);}
+        const rd=c.ruler&&Math.random()<0.3;if(rd){c.ruler.plague=true;c.ruler.life=0;}
+        ev('cat',`Plague sweeps <b>${c.title}</b>; ${Math.round(kill*100)}% of its people die${rd?', '+rulerName(c)+' among them':''}.`);}
       else if(roll<0.55&&n>900){
         const idx=c.cells[(Math.random()*n)|0];
         const nc=spawnCiv(idx,c.id);
@@ -2194,7 +2243,7 @@ function toast(t){const n=el('toast');n.textContent=t;n.classList.add('show');cl
 
 function readOpts(){
   return {
-    seed:(SYS.seed||'AURELIA-7')+'#'+SYS.focus,
+    seed:(SYS.seed||'DEMIURGE')+'#'+SYS.focus,
     lex:SYS.lex,
     pname:(SYS.planets[SYS.focus]||{}).name,
     detail:(S.gas?Math.min(S.detail,5):S.detail),
@@ -2253,7 +2302,7 @@ function forge(morph){
     }
     if(o.pname)W.pname=o.pname;
     applyFocusLook();
-    computeHab();
+    computeHab();refreshCladeUniforms();
     if(!morph&&pl&&pl.sim&&pl.sim.firstVisit){
       backfillStages(pl);
       ev('geo',`Survey of <b>${o.pname||W.pname}</b>: ${W.plates.length} plates, ${fmt(W.landFrac*100,1)}% land, ${Math.min(4,pl.moons)} moon${Math.min(4,pl.moons)===1?'':'s'}.`);
@@ -2299,7 +2348,8 @@ function buildLegend(){
     [["#180f24","hostile"],["#b83a4d","marginal"],["#f0a02e","fertile"],["#fbf6a0","optimal"]],
     [["#296bdb","cold current"],["#33393d","neutral"],["#eb5c24","warm current"],["#101214","interior"]]
   ];
-  L.innerHTML=sets[S.layer].map(s=>`<span class="sw"><i style="background:${s[0]}"></i>${s[1]}</span>`).join('');
+  const set=S.layer===9?(cladeLegend().length?cladeLegend():[["#222","no life yet"]]):sets[S.layer];
+  L.innerHTML=set.map(s=>`<span class="sw"><i style="background:${s[0]}"></i>${s[1]}</span>`).join('');
 }
 
 /* ---------- toponym labels ---------- */
@@ -2355,6 +2405,7 @@ function renderRegistry(){
     return '<div class="nrow"><i style="background:'+hex+'"></i>'+
       '<div><div class="nn">'+c.title+'</div>'+
       '<div class="ne">'+ERAS[c.era]+' \u00b7 '+c.cities.length+' cities'+(c.wars?' \u00b7 '+c.wars+' wars':'')+'</div>'+
+      (c.ruler?'<div class="ne" style="color:#9AA2B2;text-transform:none;letter-spacing:.02em">'+rulerName(c)+', '+Math.round(S.year-c.ruler.since)+' yr</div>':'')+
       '<div class="nb"><i style="background:'+hex+';width:'+(clamp(terr,0,1)*100).toFixed(1)+'%"></i></div></div>'+
       '<div class="nv">'+(terr*100).toFixed(1)+'%<br>'+Math.max(1,Math.round(c.pop*240))+'M</div></div>';
   }).join('');
@@ -2516,6 +2567,7 @@ function applyTool(ci){
     const civHit=S.civs.filter(c=>c.alive).length;
     ev('cat',`<b>Impact.</b> A ${fmt(km*0.006,1)} km bolide excavates <b>${name}</b>. Ejecta darkens the sky${civHit?'; '+R(['harvests fail','coastal cities burn','the survivors scatter'])+'.':'.'}`);
     S.bio*=0.55;
+    momentImpact(ci,km);massExtinction(curPlanet(),clamp(km/1600,0.1,0.6),'the impact winter',true);
     cam.tDist=Math.max(1.6,cam.tDist*0.92);
   }else if(S.tool==='volcano'){
     brushCells(ci,(i,t)=>{
@@ -2599,6 +2651,7 @@ function pickVertex(cx,cy){
 }
 let drag=null;
 canvas.addEventListener('pointerdown',e=>{
+  userInput();
   drag={x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,moved:0};
   canvas.setPointerCapture(e.pointerId);
 });
@@ -2634,7 +2687,7 @@ canvas.addEventListener('pointerup',e=>{
   drag=null;
 });
 canvas.addEventListener('wheel',e=>{
-  e.preventDefault();
+  e.preventDefault();userInput();
   const lo=(S.view==='moon'&&S.viewMoon)?S.viewMoon.rad*2.2:1.16;
   const hi=(S.view==='moon'&&S.viewMoon)?S.viewMoon.rad*14:(S.mode==='sys'?60:18);
   cam.tDist=clamp(cam.tDist*Math.exp(clamp(e.deltaY,-160,160)*0.0013),lo,hi);
@@ -2741,6 +2794,8 @@ el('btn-codexcopy').addEventListener('click',()=>{
   else{const r=document.createRange();r.selectNodeContents(el('codexbody'));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);toast('select-all applied - press copy');}
 });
 el('btn-sound').addEventListener('click',()=>soundToggle());
+el('btn-tour').addEventListener('click',()=>{S.lastInput=performance.now();if(S.tour)stopTour();else startTour();});
+el('btn-cine').addEventListener('click',()=>{S.cine=S.cine?0:1;el('btn-cine').classList.toggle('on',!!S.cine);if(!S.cine&&CINE.active){CINE.queue.length=0;endMoment();}});
 el('btn-helpclose').addEventListener('click',()=>openHelp(false));
 el('btn-helpgo').addEventListener('click',()=>openHelp(false));
 el('help').addEventListener('click',e=>{if(e.target.id==='help')openHelp(false);});
@@ -2758,7 +2813,7 @@ el('toggles').addEventListener('click',e=>{
   U.uLights.value=S.toggles.lights?1:0;
 });
 function newSystem(sd){
-  sd=((sd||'').trim()||'AURELIA-7').toUpperCase();
+  sd=((sd||'').trim()||'DEMIURGE').toUpperCase();
   el('seed').value=sd;
   buildSystem(sd);
   resetSim();
@@ -2793,6 +2848,7 @@ el('btn-snowball').addEventListener('click',()=>{
   el('r-green').value=-26;U.uGreen.value=-26;el('r-solar').value=0.82;U.uSolar.value=0.82;
   syncLabels();computeHab();scheduleClimate();
   ev('cat',`<b>Snowball.</b> Runaway ice-albedo feedback. The oceans freeze from the poles inward.`);
+  massExtinction(curPlanet(),0.55,'the ice',true);
 });
 el('btn-runaway').addEventListener('click',()=>{
   el('r-green').value=34;U.uGreen.value=34;el('r-solar').value=1.22;U.uSolar.value=1.22;
@@ -2843,6 +2899,9 @@ const TIPS={
  '#btn-help':['Field guide','Everything on this screen, explained.'],
  '#btn-back':['Back to the planet','Leave the moon and return to the surface view.'],
  '#btn-codex':['Codex','A written record of the whole system as it stands: star, every body, the polities of this world and its chronicle. Copy it as text to keep or share. C toggles.'],
+ '#btn-tour':['Tour','Sit back. The camera flies itself: the world, a city at night, a frontier, the highlands, orbit, a moon, the system, then the next planet. Starts by itself after ninety idle seconds. Any key stops it. T toggles.'],
+ '#btn-cine':['Cinema','When something big happens - an impact, a founding, a launch, a war, an eclipse - the camera goes to it for a few seconds with a title card, then comes back. Turn this off to keep the camera yours.'],
+ '[data-layer="9"]':['Life','Which lineage holds each niche: sea, shore, forest, grassland, desert, ice, high country and air. Colours change as clades radiate and die out. 0 selects it.'],
  '#btn-sound':['Sound','A quiet drone keyed to the world you are looking at - thinner and higher on cold worlds, deep on gas giants - with a chime for each chronicle entry. Off by default. M toggles.'],
  '#map':['Map','Equirectangular projection of the current channel. Click anywhere to swing the camera there.'],
  '#reg':['Registry','Every living polity: territory as a share of the land, population, technological era.'],
@@ -2883,10 +2942,13 @@ addEventListener('scroll',hideTip,true);
 
 addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT')return;
+  const wasTour=S.tour;userInput();if(wasTour)return;
   const k=e.key.toLowerCase();
   if(k===' '){e.preventDefault();el('btn-play').click();}
   else if(k==='h')document.body.classList.toggle('hidehud');
   else if(k>='1'&&k<='9'){const b=el('layers').querySelector(`button[data-layer="${+k-1}"]`);if(b)b.click();}
+  else if(k==='0'){const b=el('layers').querySelector('button[data-layer="9"]');if(b)b.click();}
+  else if(k==='t')el('btn-tour').click();
   else if(k==='r')el('btn-roll').click();
   else if(k==='g')el('toggles').querySelector('button[data-tg="grid"]').click();
   else if(k==='s')el('btn-spin').click();
@@ -3092,7 +3154,9 @@ function buildSystem(seedStr){
     SYS.comets.push({name:SYS.lex.word(1,2)+"'"+(ROMAN[i]||i),a,e,inc:(rnd()-0.5)*0.5,arg:rnd()*6.28,phase:rnd()*6.28,
       period:Math.sqrt(a*a*a/SYS.star.mass),r:a,nu:0,skyPos:null,near:0});
   }
-  const f=list.findIndex(p=>p.hz&&p.type!=="belt");
+  // land on the most promising world, not merely the first in the zone
+  let f=-1,fv=-1;
+  list.forEach((p,i)=>{if(p.type==="belt")return;const v=(typeof estimateCap==='function'?estimateCap(p):0)+(p.hz?0.05:0)+(p.type==='terran'?0.02:0);if(v>fv){fv=v;f=i;}});
   SYS.focus=f<0?0:f;
   return SYS;
 }
@@ -3431,7 +3495,8 @@ function estimateCap(p){
 function initPlanetSims(){
   SYS.planets.forEach(p=>{
     p.sim={visited:false,full:null,bio:0,stage:0,civs:[],chron:[],hist:[],impactWinter:0,
-      iceState:"",lastSeaEv:0,cap:estimateCap(p),deadNoted:false,sats:[],meanT:null};
+      iceState:"",lastSeaEv:0,cap:estimateCap(p),deadNoted:false,sats:[],meanT:null,clades:[]};
+    if(p.type!=='belt'){const A=ARCHETYPES[p.arch];const ghz=p.hz?clamp((1.05-p.insol)*36,-8,34):0;p.sim.meanT=-34+45*clamp(p.insol,0.05,4)+A.green+ghz-6;}
     p.colony=0;
   });
   S.lastBgYear=-1e9;
@@ -3594,7 +3659,7 @@ function restoreFocused(p){
   U.uForm.value=1;
   applyFocusLook();computeHab();syncIdentity();
   buildLabels();addCityLabels();buildSatLabels();drawMap();buildLegend();
-  rebuildChron(p);buildRoutes();
+  rebuildChron(p);buildRoutes();refreshCladeUniforms();
   S.lastGen=0;
 }
 function backfillStages(p){
@@ -3892,8 +3957,10 @@ function declareWar(c,o){
   c.cells=c.cells.filter(i=>S.owner[i]===c.id);o.cells=o.cells.filter(i=>S.owner[i]===o.id);
   if(c.cells.length<40||o.cells.length<40)return;
   S.wars.push({a:c.id,b:o.id,start:S.year,weary:0,alive:true,a0:c.cells.length,b0:o.cells.length});
-  c.wars++;o.wars++;
-  ev('cat',`<b>War.</b> ${c.title} marches on ${o.title} over ${R(['the marches of','the river towns of','the passes of','the coast facing'])} ${placeOf(o.capital)}.`);
+  c.wars++;o.wars++;if(c.ruler)c.ruler.wars++;
+  ev('cat',`<b>War.</b> ${rulerName(c)} of ${c.title} marches on ${o.title} over ${R(['the marches of','the river towns of','the passes of','the coast facing'])} ${placeOf(o.capital)}.`);
+  let fc=c.capital;for(const i of c.cells){let hit=false;for(let k=0;k<W.geo.nct[i];k++)if(S.owner[W.geo.nbr[i*6+k]]===o.id){hit=true;break;}if(hit){fc=i;break;}}
+  momentFront(fc,c.title+' against '+o.title,rulerName(c)+' opens the war');
 }
 function warTick(dt){
   const nbr=W.geo.nbr,nct=W.geo.nct,owner=S.owner,pop=S.pop;
@@ -3926,7 +3993,8 @@ function warTick(dt){
       const winner=lossA<lossB?A:B,loser=winner===A?B:A;
       A.truce=A.truce||{};B.truce=B.truce||{};A.truce[B.id]=S.year+420;B.truce[A.id]=S.year+420;
       A.cells=A.cells.filter(i=>owner[i]===A.id);B.cells=B.cells.filter(i=>owner[i]===B.id);
-      ev('civ',`<b>Peace of ${winner.cap}.</b> After ${Math.round(S.year-w.start)} years ${winner.title} keeps what it took; ${loser.title} cedes ${Math.round(Math.max(lossA,lossB)*100)}% of its land.`);
+      ev('civ',`<b>Peace of ${winner.cap}.</b> After ${Math.round(S.year-w.start)} years ${rulerName(winner)} and ${rulerName(loser)} set their seals: ${winner.title} keeps what it took; ${loser.title} cedes ${Math.round(Math.max(lossA,lossB)*100)}% of its land.`);
+      momentGeneric('PEACE','The Peace of '+winner.cap,winner.title+' and '+loser.title,winner.capital,2.4);
     }
   }
   S.wars=S.wars.filter(w=>w.alive||S.year-w.start<2000);
@@ -4274,7 +4342,8 @@ function updateEclipse(){
       _tmp.copy(_md);globe.worldToLocal(_tmp);_tmp.normalize();
       U.uEclipse.value.set(_tmp.x,_tmp.y,_tmp.z,clamp((cosang-Math.cos(angR+0.032))/0.01,0,1));
       U.uEclipseR.value=angR*1.6+0.05;
-      if(S.year-(m.lastEcl||-1e9)>400){m.lastEcl=S.year;ev('geo',`<b>${m.name}</b> crosses the face of the star. Day goes dim beneath its shadow.`);}
+      if(S.year-(m.lastEcl||-1e9)>400){m.lastEcl=S.year;ev('geo',`<b>${m.name}</b> crosses the face of the star. Day goes dim beneath its shadow.`);
+        momentGeneric('ECLIPSE',m.name+' crosses the star','the shadow sweeps '+placeOf(nearestVertex(_tmp.x,_tmp.y,_tmp.z)),nearestVertex(_tmp.x,_tmp.y,_tmp.z),2.8);}
       return;
     }
   }
@@ -4293,6 +4362,7 @@ function moonBaseTick(dt){
       m.base=c.title;p.sim.moonBases[i]=c.title;
       ev('civ',`<b>${c.title}</b> lands on <b>${m.name}</b> and stays: a base under the regolith, ${Math.round(m.radKm).toLocaleString()} km world all its own.`);
       buildSatLabels();
+      pushMoment({pri:2,dur:8,moon:m,kicker:'LANDING \u00b7 YR '+Math.round(S.year).toLocaleString(),title:m.name,sub:c.title+' establishes a base'});
     }
   });
 }
@@ -4343,10 +4413,20 @@ function buildCodex(){
     push(`<p class="hnote">${esc(el('pclass').textContent)}. ${fmt(S.landFrac*100,0)}% land, ${fmt(S.iceFrac*100,0)}% ice, mean ${fmt(S.gmt,1)} \u00b0C, biosphere ${S.gas?'none':Math.round(S.bio*100)+'%'}. Largest landmass <b>${W.continents&&W.continents[0]?esc(W.continents[0].name):'\u2014'}</b>; largest sea <b>${W.oceans&&W.oceans[0]?esc(W.oceans[0].name):'\u2014'}</b>.${moons.length?' Moons: '+moons.map(m=>esc(m.name)+(m.base?' (base)':'')).join(', ')+'.':''}</p>`,
          `${el('pclass').textContent}. ${fmt(S.landFrac*100,0)}% land, mean ${fmt(S.gmt,1)} C, biosphere ${S.gas?'none':Math.round(S.bio*100)+'%'}.${moons.length?' Moons: '+moons.map(m=>m.name).join(', ')+'.':''}`);
     if(live.length){
-      push('<table class="ctab"><tr><th>Polity</th><th>Era</th><th>Land</th><th>People</th><th>Cities</th><th>Wars</th></tr>',`\n### Polities`);
+      push('<table class="ctab"><tr><th>Polity</th><th>Ruler</th><th>Era</th><th>Land</th><th>People</th><th>Cities</th><th>Wars</th></tr>',`\n### Polities`);
       for(const c of live){
-        push(`<tr><td><i style="background:#${c.color.getHexString()}"></i>${esc(c.title)}</td><td>${ERAS[c.era]}</td><td>${(c.cells.length/landCells*100).toFixed(1)}%</td><td>${Math.max(1,Math.round(c.pop*240))}M</td><td>${(c.cities||[]).length}</td><td>${c.wars}</td></tr>`,
-             `- ${c.title}: ${ERAS[c.era]}, ${(c.cells.length/landCells*100).toFixed(1)}% of land, ${Math.max(1,Math.round(c.pop*240))}M, ${(c.cities||[]).length} cities`);
+        push(`<tr><td><i style="background:#${c.color.getHexString()}"></i>${esc(c.title)}</td><td>${esc(rulerName(c))}</td><td>${ERAS[c.era]}</td><td>${(c.cells.length/landCells*100).toFixed(1)}%</td><td>${Math.max(1,Math.round(c.pop*240))}M</td><td>${(c.cities||[]).length}</td><td>${c.wars}</td></tr>`,
+             `- ${c.title} (${rulerName(c)}): ${ERAS[c.era]}, ${(c.cells.length/landCells*100).toFixed(1)}% of land, ${Math.max(1,Math.round(c.pop*240))}M, ${(c.cities||[]).length} cities`);
+      }
+      push('</table>');
+    }
+    const cl=(f.sim.clades||[]);
+    if(cl.length){
+      push(`<h3>Tree of life</h3><table class="ctab"><tr><th>Lineage</th><th>Niche</th><th>Descends from</th><th>Arose</th><th>Fate</th></tr>`,`\n### Tree of life`);
+      for(const c of cl.slice().sort((a,b)=>a.born-b.born)){
+        const par=cl.find(x=>x.id===c.parent);
+        push(`<tr><td><i style="background:#${c.color.toString(16).padStart(6,'0')}"></i>${esc(c.name)}${c.sapient?' \u2605':''}</td><td>${c.niche}</td><td>${par?esc(par.name):'\u2014'}</td><td>YR ${Math.round(c.born).toLocaleString()}</td><td>${c.extinct?'extinct YR '+Math.round(c.extinct).toLocaleString():'living'}</td></tr>`,
+             `- ${c.name}${c.sapient?' (sapient)':''}: ${c.niche}, from ${par?par.name:'-'}, YR ${Math.round(c.born)}${c.extinct?', extinct YR '+Math.round(c.extinct):''}`);
       }
       push('</table>');
     }
@@ -4413,6 +4493,349 @@ function chime(kind){
 <script>
 "use strict";
 /* ============================================================================
+   STAGE D - cinema, the tour, named rulers, and the tree of life
+   ========================================================================== */
+
+/* ---------- camera flights ---------- */
+const CINE={active:null,queue:[],cool:0,suppress:0,drift:0,saved:null};
+function targetSpherical(i,out){
+  const p=W.geo.pos;globe.updateMatrixWorld(true);
+  const d=new THREE.Vector3(p[i*3],p[i*3+1],p[i*3+2]);globe.localToWorld(d);
+  d.applyQuaternion(axisGroup.quaternion.clone().invert());
+  const sph=new THREE.Spherical().setFromVector3(d);
+  out.phi=clamp(sph.phi,0.12,3.02);out.theta=sph.theta;return out;
+}
+function flyTo(i,dist,rate){
+  const t=targetSpherical(i,{});
+  // shortest way round
+  let dth=t.theta-cam.theta;dth=Math.atan2(Math.sin(dth),Math.cos(dth));
+  cam.tTheta=cam.theta+dth;cam.tPhi=t.phi;if(dist)cam.tDist=dist;
+  cam.rate=rate||1.6;
+}
+function cineCard(kicker,title,sub){
+  const c=el('cine');
+  el('cine-k').textContent=kicker;el('cine-t').textContent=title;el('cine-s').textContent=sub||'';
+  c.classList.add('show');
+}
+function cineHide(){el('cine').classList.remove('show');document.body.classList.remove('cinebars');}
+function pushMoment(m){
+  if(!S.cine||S.mode!=='world')return;
+  if(CINE.suppress>0)return;
+  if(CINE.active){if(m.pri>CINE.active.pri){CINE.queue.unshift(m);}else if(CINE.queue.length<3)CINE.queue.push(m);return;}
+  if(CINE.cool>0&&m.pri<3){if(CINE.queue.length<3)CINE.queue.push(m);return;}
+  startMoment(m);
+}
+function startMoment(m){
+  CINE.active=m;m.t=0;
+  CINE.saved={dist:cam.tDist,phi:cam.tPhi,spin:S.spin,speed:S.speed,layer:S.layer};
+  S.spin=0;
+  if(m.speed!==undefined)S.speed=Math.min(S.speed,m.speed);
+  if(m.layer!==undefined){U.uLayer.value=m.layer;}
+  if(m.cell!==undefined)flyTo(m.cell,m.dist||2.1,m.rate||1.4);
+  else if(m.moon){enterMoonView(m.moon);}
+  document.body.classList.add('cinebars');
+  cineCard(m.kicker,m.title,m.sub);
+  if(m.fx)m.fx();
+}
+function endMoment(){
+  const m=CINE.active;if(!m)return;
+  CINE.active=null;CINE.cool=10;
+  cineHide();
+  if(m.moon)exitMoonView();
+  if(CINE.saved){cam.tDist=CINE.saved.dist;cam.tPhi=CINE.saved.phi;S.spin=CINE.saved.spin;S.speed=CINE.saved.speed;
+    U.uLayer.value=CINE.saved.layer;cam.rate=1.6;syncSpinBtn();}
+  if(m.after)m.after();
+}
+function cineTick(dt){
+  if(CINE.cool>0)CINE.cool-=dt;
+  if(CINE.suppress>0)CINE.suppress-=dt;
+  if(CINE.active){
+    const m=CINE.active;m.t+=dt;
+    if(m.tick)m.tick(dt);
+    if(m.t>=m.dur)endMoment();
+  }else if(CINE.queue.length&&CINE.cool<=0&&CINE.suppress<=0&&S.mode==='world'){
+    startMoment(CINE.queue.shift());
+  }
+  if(S.tour)tourTick(dt);
+}
+function userInput(){
+  S.lastInput=performance.now();
+  if(S.tour)stopTour();
+  if(CINE.active){CINE.queue.length=0;endMoment();CINE.suppress=25;}
+}
+
+/* ---------- particles ---------- */
+const FX={n:0,max:360,pos:null,vel:null,life:null,col:null,pts:null};
+(function(){
+  const g=new THREE.BufferGeometry();
+  FX.pos=new Float32Array(FX.max*3);FX.vel=new Float32Array(FX.max*3);FX.life=new Float32Array(FX.max);FX.col=new Float32Array(FX.max*3);
+  const sz=new Float32Array(FX.max);
+  g.setAttribute('position',new THREE.BufferAttribute(FX.pos,3));
+  g.setAttribute('aSize',new THREE.BufferAttribute(sz,1));
+  g.setAttribute('aCol',new THREE.BufferAttribute(FX.col,3));
+  FX.size=sz;
+  FX.pts=new THREE.Points(g,new THREE.ShaderMaterial({vertexShader:STAR_VERT,fragmentShader:STAR_FRAG,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+  FX.pts.frustumCulled=false;
+  globe.add(FX.pts);
+})();
+function spawnFx(i,count,speed,col,life,up){
+  const p=W.geo.pos;const dx=p[i*3],dy=p[i*3+1],dz=p[i*3+2];
+  const r=1+Math.max(W.elev[i],U.uSea.value)*RELIEF_UNIT*U.uRelief.value;
+  for(let k=0;k<count;k++){
+    const j=FX.n%FX.max;FX.n++;
+    FX.pos[j*3]=dx*r;FX.pos[j*3+1]=dy*r;FX.pos[j*3+2]=dz*r;
+    const rx=(Math.random()-0.5),ry=(Math.random()-0.5),rz=(Math.random()-0.5);
+    const s=speed*(0.3+Math.random());
+    FX.vel[j*3]=(dx*up+rx)*s;FX.vel[j*3+1]=(dy*up+ry)*s;FX.vel[j*3+2]=(dz*up+rz)*s;
+    FX.life[j]=life*(0.5+Math.random()*0.7);
+    const c=col[(Math.random()*col.length)|0];FX.col[j*3]=c[0];FX.col[j*3+1]=c[1];FX.col[j*3+2]=c[2];
+  }
+}
+function fxTick(dt){
+  const pa=FX.pts.geometry.getAttribute('position'),sz=FX.pts.geometry.getAttribute('aSize');
+  let any=false;
+  for(let j=0;j<FX.max;j++){
+    if(FX.life[j]<=0){FX.size[j]=0;continue;}
+    any=true;FX.life[j]-=dt;
+    let x=FX.pos[j*3],y=FX.pos[j*3+1],z=FX.pos[j*3+2];
+    const l=Math.hypot(x,y,z)||1;
+    // fall back toward the surface
+    FX.vel[j*3]-=x/l*0.35*dt;FX.vel[j*3+1]-=y/l*0.35*dt;FX.vel[j*3+2]-=z/l*0.35*dt;
+    x+=FX.vel[j*3]*dt;y+=FX.vel[j*3+1]*dt;z+=FX.vel[j*3+2]*dt;
+    const l2=Math.hypot(x,y,z);
+    if(l2<1.0){const f=1.0/l2;x*=f;y*=f;z*=f;FX.vel[j*3]*=0.2;FX.vel[j*3+1]*=0.2;FX.vel[j*3+2]*=0.2;}
+    FX.pos[j*3]=x;FX.pos[j*3+1]=y;FX.pos[j*3+2]=z;
+    FX.size[j]=(0.0035+0.006*Math.min(1,FX.life[j]))*cam.dist;
+  }
+  pa.needsUpdate=true;sz.needsUpdate=true;FX.pts.visible=any;
+}
+function flash(strength){
+  const f=el('flash');f.style.transition='none';f.style.opacity=String(Math.min(1,strength));
+  requestAnimationFrame(()=>{f.style.transition='opacity 1.4s ease-out';f.style.opacity='0';});
+}
+let shake=0;
+
+/* ---------- moments for the things that happen ---------- */
+function momentImpact(i,km){
+  pushMoment({pri:4,dur:9,cell:i,dist:1.9,rate:2.2,speed:1,
+    kicker:'IMPACT \u00b7 YR '+Math.round(S.year).toLocaleString(),title:W.pname,sub:fmt(km*0.006,1)+' km bolide \u00b7 '+placeOf(i),
+    fx:()=>{flash(0.9);shake=1.2;
+      spawnFx(i,120,0.45,[[1.0,0.55,0.2],[1.0,0.85,0.5],[0.6,0.5,0.45],[0.35,0.3,0.28]],5,1.2);
+      spawnFx(i,70,0.2,[[0.5,0.45,0.4],[0.3,0.28,0.26]],8,0.6);},
+    tick:(dt)=>{if(Math.random()<dt*4)spawnFx(i,6,0.08,[[0.4,0.35,0.3]],5,1.0);}});
+}
+function momentLaunch(i,title,to){
+  pushMoment({pri:2,dur:8,cell:i,dist:2.3,rate:1.4,
+    kicker:'LAUNCH \u00b7 YR '+Math.round(S.year).toLocaleString(),title:title,sub:'bound for '+to,
+    tick:(dt)=>{const m=CINE.active;const t=clamp(m.t/5,0,1);
+      if(t<1&&Math.random()<dt*40){spawnFx(i,1,0,[[1,0.9,0.7]],1.6,0);const j=(FX.n-1)%FX.max;
+        const p=W.geo.pos;const h=1.02+t*0.9;FX.pos[j*3]=p[i*3]*h;FX.pos[j*3+1]=p[i*3+1]*h;FX.pos[j*3+2]=p[i*3+2]*h;FX.vel[j*3]=0;FX.vel[j*3+1]=0;FX.vel[j*3+2]=0;}}});
+}
+function momentCity(i,title,sub){
+  pushMoment({pri:2,dur:8,cell:i,dist:1.8,rate:1.2,kicker:'FOUNDING \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
+}
+function momentFront(i,title,sub){
+  pushMoment({pri:3,dur:9,cell:i,dist:2.0,rate:1.5,layer:6,kicker:'WAR \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub,
+    tick:(dt)=>{if(S.civs.length&&Math.random()<dt*30)sparkFront(2);}});
+}
+function momentGeneric(kicker,title,sub,cell,dist){
+  pushMoment({pri:1,dur:7,cell,dist:dist||2.6,rate:1.3,kicker:kicker+' \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
+}
+function sparkFront(n){
+  if(!S.border)return;
+  for(let k=0;k<n;k++){
+    for(let t=0;t<40;t++){const i=(Math.random()*W.V)|0;if(S.border[i]>1.5){spawnFx(i,3,0.05,[[1,0.5,0.25],[1,0.85,0.5]],0.9,1.0);break;}}
+  }
+}
+
+/* ---------- the tour ---------- */
+const TOUR={step:0,t:0,dur:0,worldsSeen:0};
+function startTour(){
+  if(S.tour)return;
+  S.tour=true;TOUR.step=-1;TOUR.t=0;TOUR.dur=0;TOUR.worldsSeen=0;
+  TOUR.saved={speed:S.speed,spin:S.spin,layer:S.layer,dist:cam.tDist};
+  S.speed=Math.max(S.speed,8);S.playing=true;S.spin=0;
+  if(S.mode==='sys')setMode('world');
+  document.body.classList.add('hidehud','cinebars','touring');
+  el('btn-tour').classList.add('on');
+  tourNext();
+}
+function stopTour(){
+  if(!S.tour)return;
+  S.tour=false;cineHide();exitMoonView();
+  document.body.classList.remove('hidehud','touring');
+  if(TOUR.saved){S.speed=TOUR.saved.speed;S.spin=TOUR.saved.spin;U.uLayer.value=TOUR.saved.layer;cam.tDist=TOUR.saved.dist;syncSpinBtn();}
+  cam.rate=1.6;CINE.drift=0;
+  el('btn-tour').classList.remove('on');
+  [...el('speeds').querySelectorAll('button')].forEach(b=>b.classList.toggle('on',+b.dataset.sp===S.speed));
+}
+function tourNext(){
+  TOUR.step=(TOUR.step+1)%8;TOUR.t=0;
+  const p=curPlanet();const live=S.civs.filter(c=>c.alive).sort((a,b)=>b.cells.length-a.cells.length);
+  const yr='YR '+Math.round(S.year).toLocaleString();
+  U.uLayer.value=0;CINE.drift=0;
+  switch(TOUR.step){
+    case 0:{TOUR.dur=11;cam.tDist=4.6;cam.tPhi=1.2;cam.rate=1.0;CINE.drift=0.12;
+      cineCard((p?p.desig:'')+' \u00b7 '+yr,W.pname||'',el('pclass').textContent);break;}
+    case 1:{ // a city, preferably in the dark
+      let best=null,bv=-2;_tmp.copy(U.uSun.value);
+      for(const c of live){for(const ct of [{i:c.capital,name:c.cap,civ:c}].concat((c.cities||[]).map(x=>({i:x.i,name:x.name,civ:c})))){
+        const pp=W.geo.pos;const d=-(pp[ct.i*3]*_tmp.x+pp[ct.i*3+1]*_tmp.y+pp[ct.i*3+2]*_tmp.z);if(d>bv){bv=d;best=ct;}}}
+      if(!best){tourNext();return;}
+      TOUR.dur=10;flyTo(best.i,1.75,1.1);cineCard('CITY \u00b7 '+yr,best.name,best.civ.title+(best.civ.ruler?' \u00b7 '+rulerName(best.civ):''));break;}
+    case 2:{ // a frontier
+      let fi=-1;for(let i=0;i<W.V;i++)if(S.border&&S.border[i]>1.5){fi=i;break;}
+      if(fi<0&&live.length>1)fi=live[1].capital;
+      if(fi<0){tourNext();return;}
+      TOUR.dur=10;flyTo(fi,2.2,1.2);U.uLayer.value=6;
+      const w=S.wars.find(x=>x.alive);
+      cineCard('FRONTIER \u00b7 '+yr,w?civById(w.a).title+' against '+civById(w.b).title:live.length+' polities',w?'a war in its '+Math.round(S.year-w.start)+'th year':'borders at peace');break;}
+    case 3:{ // high country
+      const r=(W.ranges||[])[0];if(!r){tourNext();return;}
+      const i=nearestVertex(r.c[0],r.c[1],r.c[2]);TOUR.dur=9;flyTo(i,1.55,1.1);cineCard('HIGHLANDS \u00b7 '+yr,r.name,fmt(r.hi*KM_PER_UNIT,1)+' km summit');break;}
+    case 4:{ // satellites
+      if(!p||!p.sim.sats.length||!live.length){tourNext();return;}
+      TOUR.dur=8;flyTo(live[0].capital,1.45,1.1);cineCard('ORBIT \u00b7 '+yr,p.sim.sats.length+' satellites',live[0].title);break;}
+    case 5:{ // moon
+      if(!moons.length){tourNext();return;}
+      const m=moons[(Math.random()*moons.length)|0];TOUR.dur=9;enterMoonView(m);cineCard('MOON \u00b7 '+yr,m.name,m.kind+(m.base?' \u00b7 base: '+m.base:''));break;}
+    case 6:{ // the system
+      exitMoonView();setMode('sys');cam.tDist=30;cam.tPhi=0.75;cam.rate=0.9;CINE.drift=0.1;TOUR.dur=11;
+      cineCard('SYSTEM \u00b7 '+yr,SYS.star.name,SYS.planets.length+' bodies \u00b7 '+SYS.planets.filter(q=>q.sim&&q.sim.civs.some(c=>c.alive)).length+' inhabited');break;}
+    case 7:{ // travel
+      const others=SYS.planets.filter(q=>q.idx!==SYS.focus&&q.type!=='belt');
+      const score=q=>(q.sim&&q.sim.civs.some(c=>c.alive)?3:0)+(q.hz?2:0)+(q.type==='gas'||q.type==='icegiant'?0.5:1)+Math.random();
+      others.sort((a,b)=>score(b)-score(a));
+      const nxt=others[0];if(!nxt){TOUR.step=-1;tourNext();return;}
+      TOUR.dur=3;cineCard('TRAVEL','to '+nxt.name,PTYPES[nxt.type].n+' \u00b7 '+fmt(nxt.a,2)+' AU');
+      setTimeout(()=>{if(S.tour){descend(nxt.idx);S.spin=0;document.body.classList.add('hidehud','cinebars','touring');}},1200);
+      TOUR.worldsSeen++;break;}
+  }
+}
+function tourTick(dt){
+  TOUR.t+=dt;
+  if(CINE.drift)cam.tTheta+=CINE.drift*dt;
+  if(TOUR.t>=TOUR.dur)tourNext();
+}
+
+/* ---------- rulers ---------- */
+const RULER_TITLES={Dominion:'Autarch',Compact:'Speaker',Hegemony:'Hegemon',Republic:'Consul',Imperium:'Sovereign',Confederacy:'Marshal',League:'Speaker',Throne:'Sovereign',Protectorate:'Warden',Concord:'Chancellor',Sovereignty:'Sovereign',Assembly:'Premier'};
+function rulerTitle(c){const suf=c.title.split(' ').pop();return RULER_TITLES[suf]||['Chieftain','Sovereign','Sovereign','Autarch','Consul','Chancellor','Premier','Director','Coordinator'][c.era||0];}
+function newRuler(c,born){
+  const age=18+Math.random()*30;
+  c.ruler={name:W.lex.word(1,2)+(Math.random()<0.3?' '+W.lex.word(1,1):''),born:(born!==undefined?born:S.year)-age,since:S.year,
+    life:52+Math.random()*38,wars:0,golden:0,plague:false};
+  return c.ruler;
+}
+function rulerName(c){return c.ruler?rulerTitle(c)+' '+c.ruler.name:c.title;}
+function rulerEpithet(r,c){
+  const reign=S.year-r.since;
+  if(r.plague)return 'the Unlucky';
+  if(r.wars>=2)return 'the Warlike';
+  if(r.golden>=1)return 'the Builder';
+  if(reign>60)return 'the Old';
+  if(reign<6)return 'the Brief';
+  return R(['the Quiet','the Just','the Stubborn','the Fair','the Wanderer','the Pious','the Careful']);
+}
+function rulerTick(c,dt){
+  if(!c.ruler)newRuler(c);
+  const r=c.ruler;
+  const age=S.year-r.born;
+  if(age>r.life||Math.random()<0.00008*dt){
+    const ep=rulerEpithet(r,c);
+    const heir=newRuler(c);
+    const crisis=Math.random()<0.14&&c.cells.length>300;
+    ev('civ',`<b>${rulerTitle(c)} ${r.name} ${ep}</b> of ${c.title} dies after ${Math.round(S.year-r.since)} years. `+
+      (crisis?`The succession is disputed; <b>${heir.name}</b> takes the seat by force.`:`<b>${heir.name}</b> succeeds.`));
+    if(crisis){c.aggr=Math.min(1.2,c.aggr+0.15);for(let s=0;s<c.cells.length;s++)S.pop[c.cells[s]]*=0.85;}
+  }
+}
+
+/* ---------- the tree of life ---------- */
+const NICHES=['marine','littoral','forest','grassland','desert','polar','alpine','aerial'];
+const NICHE_ADJ={marine:['littoral'],littoral:['forest','grassland','marine'],forest:['aerial','alpine','grassland'],grassland:['desert','forest','polar'],desert:['grassland'],polar:['alpine'],alpine:['polar','aerial'],aerial:['forest','littoral']};
+const CLADE_SUFFIX={marine:['-fins','-swimmers','-shells','-drifters'],littoral:['-crawlers','-waders','-diggers'],forest:['-climbers','-browsers','-stalkers'],grassland:['-runners','-grazers','-hunters'],desert:['-burrowers','-walkers'],polar:['-furs','-sleepers'],alpine:['-leapers','-hoofs'],aerial:['-wings','-gliders','-soarers']};
+const CLADE_HUES=[0.55,0.13,0.30,0.18,0.08,0.60,0.75,0.85];
+function cladeColor(niche,k){return new THREE.Color().setHSL((CLADE_HUES[NICHES.indexOf(niche)]+k*0.045)%1,0.6,0.55);}
+function newClade(p,parent,niche){
+  const sim=p.sim;sim.clades=sim.clades||[];sim.cladeSeq=(sim.cladeSeq||0)+1;
+  const lex=SYS.lex;
+  const c={id:sim.cladeSeq,name:lex.word(1,2)+R(CLADE_SUFFIX[niche]),niche,parent:parent?parent.id:0,born:S.year,extinct:0,
+    color:cladeColor(niche,sim.cladeSeq).getHex(),sapient:false};
+  sim.clades.push(c);return c;
+}
+function livingClades(p){return (p.sim.clades||[]).filter(c=>!c.extinct);}
+function dominantByNiche(p){
+  const d={};for(const c of livingClades(p)){if(!d[c.niche]||c.born<d[c.niche].born)d[c.niche]=c;}return d;
+}
+function cladeTick(p,dy,focused){
+  const sim=p.sim;if(!sim)return;
+  const bio=focused?S.bio:sim.bio;
+  const gmt=focused?S.gmt:(sim.meanT!==null&&sim.meanT!==undefined?sim.meanT:15);
+  const ice=focused?S.iceFrac:0.1;
+  if(!sim.clades||!sim.clades.length){
+    if(bio>0.05&&S.year>200){const c=newClade(p,null,'marine');
+      const msg=`The first lineage, the <b>${c.name}</b>, drifts in the seas of <b>${p.name}</b>.`;
+      if(focused)ev('life',msg);else sim.chron.push({y:S.year,k:'life',h:msg});}
+    return;
+  }
+  sim.cladeAcc=(sim.cladeAcc||0)+dy;
+  const live=livingClades(p);
+  if(sim.cladeAcc>230){
+    sim.cladeAcc=0;
+    // radiation
+    if(live.length<14&&bio>0.28&&Math.random()<0.55+bio*0.3){
+      const parent=live[(Math.random()*live.length)|0];
+      const opts=NICHE_ADJ[parent.niche].filter(n=>!(n==='polar'&&ice<0.03)&&!(n==='desert'&&bio>0.95)&&(n!=='aerial'||bio>0.5));
+      if(opts.length){
+        const niche=opts[(Math.random()*opts.length)|0];
+        const first=!live.some(c=>c.niche===niche);
+        const c=newClade(p,parent,niche);
+        const verb={marine:'return to the sea',littoral:'haul out onto the shore',forest:'take to the forests',grassland:'spread across the plains',desert:'push into the deserts',polar:'follow the ice',alpine:'climb into the high country',aerial:'take to the air'}[niche];
+        const msg=`The <b>${c.name}</b>, descended from the ${parent.name}, ${verb}${first?' \u2014 the first to do so':''}.`;
+        if(focused)ev('life',msg);else if(first&&(niche==='littoral'||niche==='aerial'))evBg(p,'life',`On <b>${p.name}</b> the <b>${c.name}</b> ${verb}.`);else sim.chron.push({y:S.year,k:'life',h:msg});
+      }
+    }
+    // climate culls
+    for(const c of live){
+      let risk=0;
+      if(ice>0.34&&(c.niche==='desert'||c.niche==='forest'||c.niche==='aerial'))risk=0.09;
+      if(gmt>31&&(c.niche==='polar'||c.niche==='alpine'))risk=0.18;
+      if(gmt<-6&&c.niche!=='marine'&&c.niche!=='polar')risk=0.10;
+      if(bio<0.15&&c.niche!=='marine')risk=0.08;
+      if(risk&&Math.random()<risk&&!c.sapient)extinguish(p,c,focused,ice>0.34?'the ice':(gmt>31?'the heat':'a failing world'));
+    }
+  }
+}
+function extinguish(p,c,focused,cause){
+  if(c.extinct)return;c.extinct=S.year;
+  const msg=`The last of the <b>${c.name}</b> die in ${cause}. ${Math.round(S.year-c.born).toLocaleString()} years of the ${c.niche} are ended.`;
+  if(focused)ev('cat',msg);else evBg(p,'cat',`On <b>${p.name}</b> the <b>${c.name}</b> are gone.`);
+}
+function massExtinction(p,frac,cause,focused){
+  const live=livingClades(p);let n=0;
+  for(const c of live)if(!c.sapient&&Math.random()<frac){c.extinct=S.year;n++;}
+  if(n){const msg=`<b>Mass extinction.</b> ${n} of ${live.length} lineages vanish in ${cause}.`;if(focused)ev('cat',msg);else evBg(p,'cat',`On <b>${p.name}</b>: `+msg);}
+  if(focused)refreshCladeUniforms();
+}
+function sapientClade(p){
+  const cand=livingClades(p).filter(c=>c.niche!=='marine'&&c.niche!=='aerial');
+  if(!cand.length)return null;
+  const c=cand.sort((a,b)=>a.born-b.born)[0];c.sapient=true;return c;
+}
+function refreshCladeUniforms(){
+  const p=curPlanet();const d=p?dominantByNiche(p):{};
+  NICHES.forEach((n,i)=>{const c=d[n];const v=U.uClade.value[i];if(c){const col=new THREE.Color(c.color);v.set(col.r,col.g,col.b,1);}else v.set(0,0,0,0);});
+}
+function cladeLegend(){
+  const p=curPlanet();if(!p)return [];
+  const d=dominantByNiche(p);
+  return NICHES.filter(n=>d[n]).map(n=>['#'+d[n].color.toString(16).padStart(6,'0'),d[n].name+' \u00b7 '+n]);
+}
+</script>
+<script>
+"use strict";
+/* ============================================================================
    MAIN LOOP
    ========================================================================== */
 const _sunW=new THREE.Vector3(),_tmp=new THREE.Vector3(),_camL=new THREE.Vector3();
@@ -4440,6 +4863,7 @@ function simulate(dt){
       continue;
     }
     ev(st.k,typeof st.t==='function'?st.t():st.t);
+    if(st.y===980)massExtinction(curPlanet(),0.5,'the cataclysm',true);
   }
   // ice volume and sea level
   if(!S.gas&&Math.abs((S.dSea||0)-S.lastSeaEv)>0.020){
@@ -4473,7 +4897,7 @@ function simulate(dt){
     if(tgt.sim){
       if(tgt===curPlanet()&&!S.gas&&S.hab&&tgt.sim.cap>0){
         const i=bestSite();
-        if(i>=0){const c=spawnCiv(i);if(c){c.title=title+" Colony";c.tech=2.6;c.era=eraOf(2.6);c.cap=W.lex.word(2,2);addCityLabels();}}
+        if(i>=0){const c=spawnCiv(i);if(c){c.title=title+" Colony";c.tech=2.6;c.era=eraOf(2.6);c.cap=W.lex.word(2,2);addCityLabels();momentCity(i,c.title,'landfall at '+placeOf(i));}}
       }else{
         tgt.sim.civs.push({id:tgt.sim.civs.length+1,name:title.split(' ')[0],title:title+(tgt.sim.cap>0?" Colony":" Outpost"),alive:true,tech:2.6,era:eraOf(2.6),
           pop:0.5,share:0.01,born:S.year,cities:1,launched:1,cap:SYS.lex.word(2,2)});
@@ -4487,7 +4911,9 @@ function simulate(dt){
     if(S.bio>0.5&&!S.civs.length&&S.year>1200){
       const i=bestSite();
       if(i>=0){const c=spawnCiv(i);
-        if(c){ev('civ',`Tool use, then agriculture. <b>${c.title}</b> raises its first walls at <b>${c.cap}</b>, on ${placeOf(i)}.`);addCityLabels();}}
+        if(c){const sc=sapientClade(curPlanet());
+          ev('civ',`Tool use, then agriculture. ${sc?'The <b>'+sc.name+'</b> raise':'<b>'+c.title+'</b> raises'} the first walls at <b>${c.cap}</b>, on ${placeOf(i)}${sc?' \u2014 the polity of <b>'+c.title+'</b>':''}, under ${rulerName(c)}.`);
+          addCityLabels();momentCity(c.capital,c.title,'the first city, '+c.cap+(sc?' \u00b7 built by the '+sc.name:''));}}
     }
     if(S.civs.length){civTick(civAcc*sp*2.6);warTick(civAcc*sp*2.6);moonBaseTick(civAcc*sp*2.6);addCityLabels();}
     ambientTick(civAcc*sp*2.6);
@@ -4496,7 +4922,8 @@ function simulate(dt){
     S.routeAcc=(S.routeAcc||0)+civAcc;
     if(S.routeAcc>2.5){S.routeAcc=0;buildRoutes();}
     const dyAbs=civAcc*sp*2.6;
-    for(const p of SYS.planets)if(p.idx!==SYS.focus&&p.sim)abstractTick(p,dyAbs);
+    cladeTick(curPlanet(),dyAbs,true);
+    for(const p of SYS.planets)if(p.idx!==SYS.focus&&p.sim){abstractTick(p,dyAbs);cladeTick(p,dyAbs,false);}
     civAcc=0;
   }
   borderAcc+=dt;
@@ -4529,9 +4956,9 @@ function frame(){
     else if(ftAvg<13.0&&renderScale<1){renderScale=Math.min(1,renderScale+0.08);applySize();}
   }
   // camera
-  cam.theta+=(cam.tTheta-cam.theta)*Math.min(1,dt*7);
-  cam.phi+=(cam.tPhi-cam.phi)*Math.min(1,dt*7);
-  cam.dist+=(cam.tDist-cam.dist)*Math.min(1,dt*5);
+  cam.theta+=(cam.tTheta-cam.theta)*Math.min(1,dt*4.4*cam.rate);
+  cam.phi+=(cam.tPhi-cam.phi)*Math.min(1,dt*4.4*cam.rate);
+  cam.dist+=(cam.tDist-cam.dist)*Math.min(1,dt*3.1*cam.rate);
   const wantFov=(S.mode==='world')?30+24*clamp((cam.dist-3.6)/4.5,0,1):30;
   if(Math.abs(camera.fov-wantFov)>0.05){camera.fov+=(wantFov-camera.fov)*Math.min(1,dt*6);camera.updateProjectionMatrix();}
   _camL.setFromSphericalCoords(cam.dist,cam.phi,cam.theta);
@@ -4539,6 +4966,7 @@ function frame(){
     camera.position.copy(_camL).applyQuaternion(axisGroup.quaternion);
     camera.up.set(0,1,0).applyQuaternion(axisGroup.quaternion);
   }else{camera.position.copy(_camL);camera.up.set(0,1,0);}
+  if(shake>0){camera.position.x+=(Math.random()-0.5)*0.028*shake;camera.position.y+=(Math.random()-0.5)*0.028*shake;shake=Math.max(0,shake-dt*0.8);}
   if(S.view==='moon'&&S.viewMoon&&S.mode==='world'){
     const t=S.viewMoon.mesh.position;
     camera.position.normalize().multiplyScalar(cam.dist).add(t);
@@ -4568,6 +4996,8 @@ function frame(){
   }
   if(S.mode==='world'){updateSky();updateSatellites();}
   updateCompanion();updateComets();updateEclipse();
+  cineTick(dt);fxTick(dt);
+  if(S.attract&&!S.tour&&S.lastInput&&now-S.lastInput>90000&&W.V&&!el('help').classList.contains('show'))startTour();
   // animations
   if(formAnim){
     formAnim.t+=dt;
@@ -4604,6 +5034,7 @@ function frame(){
       renderRegistry();
       syncIdentity();
       soundTick();
+      refreshCladeUniforms();if(S.layer===9)buildLegend();
       syncAbstractFromGrid(curPlanet());
       S.plAcc=(S.plAcc||0)+0.5;
       if(S.plAcc>=3){S.plAcc=0;buildPlanetList();}
@@ -4632,7 +5063,7 @@ function setBoot(p,t){el('bootbar').firstElementChild.style.width=(p*100)+'%';el
     setBoot(0.46,'seeding crustal plates');
     setTimeout(()=>{
       setBoot(0.72,'condensing hydrosphere');
-      buildSystem(((el('seed').value||'AURELIA-7').trim()||'AURELIA-7').toUpperCase());
+      buildSystem(((el('seed').value||'DEMIURGE').trim()||'DEMIURGE').toUpperCase());
       resetSim();
       buildOrrery();
       descend(SYS.focus);
@@ -4648,6 +5079,7 @@ function setBoot(p,t){el('bootbar').firstElementChild.style.width=(p*100)+'%';el
         }else{
           setTimeout(()=>toast('press ? for the field guide'),1200);
         }
+        S.lastInput=performance.now();
         rw=innerWidth;rh=innerHeight;applySize();
         camera.aspect=rw/rh;camera.updateProjectionMatrix();
         frame();
