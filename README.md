@@ -2,7 +2,7 @@
 
 A procedural star-system simulator that fits in one HTML file. Type a seed phrase and it builds a star, its planets, their continents, weather, rivers, life and history — then lets you watch civilisations rise, fight, launch for other worlds, and leave a chronicle behind.
 
-**Play it:** open `index.html` in a browser, or visit https://eekrats.github.io/demiurge/ once GitHub Pages is enabled on the `main` branch.
+**Play it:** open `index.html` in a browser, or visit https://demiurge.silaseacret.com.
 
 ## About this entry
 
