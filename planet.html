@@ -160,6 +160,9 @@ button.primary:hover{background:rgba(232,163,61,.12)}
 .wlbl.sky::after{content:"";position:absolute;left:50%;top:-9px;width:5px;height:5px;margin-left:-3px;
   border:1px solid rgba(200,208,224,.7);border-radius:50%}
 .wlbl.moon{font-family:var(--serif);font-style:italic;font-size:10.5px;letter-spacing:.12em;color:rgba(220,222,232,.72)}
+.wlbl.work{font-family:var(--serif);font-style:italic;font-size:10px;letter-spacing:.1em;color:rgba(240,214,150,.9)}
+.wlbl.work::before{content:"";position:absolute;left:-8px;top:50%;width:5px;height:5px;margin-top:-2px;
+  border:1px solid rgba(240,214,150,.75);transform:rotate(45deg)}
 .wlbl.sat{font-family:var(--mono);font-size:7.5px;letter-spacing:.14em;text-transform:uppercase;color:rgba(160,220,255,.85)}
 .wlbl.sat::before{content:"";position:absolute;left:-8px;top:50%;width:4px;height:1px;background:rgba(160,220,255,.7)}
 .prow .ty.pop{color:var(--amber)}
@@ -728,7 +731,10 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
           <dl class="hrow"><dt>Registry</dt><dd>Living polities with territory, population and technological era \u2014 neolithic through to orbital \u2014 and who rules each one.</dd></dl>
           <dl class="hrow"><dt>Rulers</dt><dd>Every polity has a named sovereign, consul, marshal or premier who reigns, wages the wars, presides over the golden ages, dies, and earns an epithet. Successions are usually quiet; sometimes they are not.</dd></dl>
           <dl class="hrow"><dt>Cinema</dt><dd>Big events drop time to quarter speed and pull the camera to them with a title card and a sound of their own: impacts with a shockwave and ejecta, a launch climbing on its exhaust into orbit, a lander coming down, sparks and flashes along a war front, an eclipse shadow, a comet in the sky. The <b>Tour</b> button chains a whole sequence and travels between worlds; it also starts on its own if the terminal is left idle.</dd></dl>
-          <dl class="hrow"><dt>Weather</dt><dd>Cyclones form over warm tropical water, are steered by the same winds that carry the rain, tighten while they stay at sea and are named once they do. Crossing a coast they scatter the people living there and are logged; watch one spiral in on the globe or track it across the map.</dd></dl>
+          <dl class="hrow"><dt>Great works</dt><dd>A polity at its height builds something you can see from orbit: a long wall of stone and ditch along a contested frontier, a canal cut through an isthmus to join two seas, a ring of launch pads, a beacon over its capital. They are named, and they outlast the people who raised them.</dd></dl>
+          <dl class="hrow"><dt>Ships</dt><dd>From the mercantile age a polity can settle across water, and its range grows with its technology. Sails on the horizon are how island peoples first meet \u2014 and after that they can trade, convert one another, and go to war.</dd></dl>
+          <dl class="hrow"><dt>Solar storms</dt><dd>The star throws part of itself outward. The aurora blazes far down toward the equator, satellites are lost out of the registry, and the chronicle records how far south the light was seen. Cooler stars flare more often.</dd></dl>
+          <dl class="hrow"><dt>Weather</dt><dd>Three kinds. Cyclones form over warm tropical water, are steered by the same winds that carry the rain, tighten while they stay at sea and are named once they do. Crossing a coast they scatter the people living there and are logged; watch one spiral in on the globe or track it across the map. Ochre <b>dust storms</b> roll out of hot dry interiors and bury roads; white <b>blizzards</b> close the passes at high latitude. The cloud belts also follow the sun through the year.</dd></dl>
           <dl class="hrow"><dt>Faiths</dt><dd>A polity in its iron age or later may proclaim one. It spreads cell by cell through its own people, jumps to neighbours it trades with, and eventually schisms \u2014 and a sect and its parent are the bitterest enemies of all. Two polities of one faith rarely fight; two of different faiths often do, and the chronicle calls it a holy war.</dd></dl>
           <dl class="hrow"><dt>Tongues</dt><dd>Every polity speaks a language descended from its parent's. Secession splits a tongue; long centuries drift it past its own written record. The registry and codex name them.</dd></dl>
           <dl class="hrow"><dt>Tree of life</dt><dd>Life radiates from the sea into the shore, the forests and plains, the deserts, the ice, the peaks and the air, one lineage descending from another. Ice ages, heat, impacts and snowball events cull it. The first land lineage to reach sapience founds the first polity. The <b>Life</b> channel maps who holds each niche; the codex prints the whole tree.</dd></dl>
@@ -1567,20 +1573,22 @@ uniform float uTime,uCover,uTilt,uSeason,uSolar,uGreen,uQual,uCloudFade,uEclipse
 uniform vec4 uEclipse;
 uniform vec4 uStorm[6];
 uniform vec4 uStorm2[6];
+uniform vec4 uStorm3[6];
+uniform float uSunLat;
 void main(){
   vec3 d=normalize(vDir);
   float lat=asin(clamp(d.y,-1.0,1.0));
   float t=uTime*0.008;
   vec3 q=d*3.2;
   vec3 spin=vec3(cos(t*1.7),0.0,sin(t*1.7))*0.4;
-  float band=0.55+0.45*cos(4.0*lat);
+  float band=0.55+0.45*cos(4.0*(lat-uSunLat*0.42));
   int Q=int(uQual);
   float n=fbm3(q+spin+vec3(0.0,t*0.2,0.0),Q+2);
   float n2=fbm3(q*2.6-spin*1.7+vec3(t*0.5,0.0,0.0),Q+1);
   float storm=smoothstep(0.62,0.95,fbm3(q*1.1+vec3(t*0.3,5.0,0.0),Q));
   float dens=(n*0.68+n2*0.42)*mix(0.72,1.18,band)+storm*0.30;
   // tropical cyclones: banded spiral, clear eye
-  float sd=0.0;
+  float sd=0.0; vec3 stint=vec3(1.0);
   for(int i=0;i<6;i++){
     vec4 A=uStorm[i];
     if(A.w<=0.003)continue;
@@ -1593,12 +1601,15 @@ void main(){
     vec3 e2=cross(A.xyz,e1);
     float az=atan(dot(d,e2),dot(d,e1));
     float spi=sin(az*2.0+B.y*(log(max(u,0.05))*4.4-uTime*0.55)+B.w);
+    vec4 K=uStorm3[i];
     float arms=smoothstep(-0.15,0.60,spi);
     float core=1.0-smoothstep(0.11,0.40,u);
     float body=mix(arms,1.0,core*0.88);
-    float eye=smoothstep(0.05,0.17,u);
+    body=mix(0.72,body,K.w);
+    float eye=mix(1.0,smoothstep(0.05,0.17,u),K.w);
     float edge=1.0-smoothstep(0.55,1.0,u);
-    sd=max(sd,A.w*edge*eye*body);
+    float contrib=A.w*edge*eye*body;
+    if(contrib>sd){sd=contrib;stint=K.rgb;}
   }
   dens=max(dens,sd*1.3);
   float cover=uCover;
@@ -1613,7 +1624,7 @@ void main(){
   ndl*=1.0-0.94*ecl;
   float rim=pow(1.0-clamp(dot(normalize(uCam-vWorld),d),0.0,1.0),2.5);
   vec3 c=mix(vec3(0.55,0.58,0.66),vec3(1.0,0.99,0.97),ndl);
-  c=mix(c,vec3(1.0),clamp(sd,0.0,1.0)*0.38*ndl);
+  c=mix(c,stint*mix(0.9,1.12,ndl),clamp(sd,0.0,1.0)*0.62);
   c=mix(c,uAtmoCol*1.3+vec3(0.5,0.25,0.12),pow(clamp(1.0-abs(dot(d,L))*3.0,0.0,1.0),3.0)*0.6);
   c*= (0.07+1.05*ndl);
   c+=vec3(0.35,0.4,0.5)*rim*ndl*0.5;
@@ -1641,17 +1652,18 @@ const AURORA_FRAG=`
 precision highp float;
 ${NOISE_GLSL}
 varying vec3 vDir,vWorld;
-uniform vec3 uSun,uCam;uniform float uTime,uStrength,uQual;
+uniform vec3 uSun,uCam;uniform float uTime,uStrength,uQual,uAurLat,uAurWid;
 void main(){
   vec3 d=normalize(vDir);
   float lat=abs(asin(clamp(d.y,-1.0,1.0)));
-  float ring=exp(-pow((lat-1.19)/0.105,2.0));
+  float ring=exp(-pow((lat-uAurLat)/uAurWid,2.0));
   float lon=atan(d.z,d.x);
   float curt=fbm3(vec3(cos(lon)*3.0,sin(lon)*3.0,d.y*9.0)+vec3(uTime*0.05),int(uQual)+1);
   float night=smoothstep(0.25,-0.15,dot(d,normalize(uSun)));
   float a=ring*smoothstep(0.35,0.75,curt)*night*uStrength;
   if(a<0.003)discard;
-  vec3 c=mix(vec3(0.15,0.95,0.55),vec3(0.55,0.25,0.95),smoothstep(1.12,1.32,lat));
+  vec3 c=mix(vec3(0.15,0.95,0.55),vec3(0.55,0.25,0.95),smoothstep(uAurLat-0.07,uAurLat+0.13,lat));
+  c=mix(c,vec3(0.95,0.35,0.35),smoothstep(0.55,0.0,lat-uAurLat)*0.5);
   gl_FragColor=vec4(c*a*1.6,a*0.85);
 }`;
 
@@ -1754,6 +1766,8 @@ const U={
   uFaith:{value:Array.from({length:12},()=>new THREE.Color(1,1,1))},
   uStorm:{value:Array.from({length:6},()=>new THREE.Vector4(0,1,0,0))},
   uStorm2:{value:Array.from({length:6},()=>new THREE.Vector4(1,1,0.1,0))},
+  uStorm3:{value:Array.from({length:6},()=>new THREE.Vector4(1,1,1,1))},
+  uAurLat:{value:1.19}, uAurWid:{value:0.105},
   uAtmoCol:{value:ATMO_COLORS[0].clone()},
   uSea:{value:0}, uRelief:{value:1}, uMorph:{value:0}, uForm:{value:0}, uUnit:{value:RELIEF_UNIT},
   uSolar:{value:1}, uGreen:{value:0}, uTilt:{value:23.4*Math.PI/180}, uSeason:{value:0},
@@ -1775,7 +1789,7 @@ let planetMesh=null, riverMesh=null;
 
 const cloudMat=new THREE.ShaderMaterial({
   vertexShader:CLOUD_VERT,fragmentShader:CLOUD_FRAG,transparent:true,depthWrite:false,
-  uniforms:Object.assign({uSun:U.uSun,uCam:U.uCam},pick("uAtmoCol","uTime","uCover","uTilt","uSeason","uSolar","uGreen","uQual","uCloudFade","uEclipse","uEclipseR","uStorm","uStorm2"))
+  uniforms:Object.assign({uSun:U.uSun,uCam:U.uCam},pick("uAtmoCol","uTime","uCover","uTilt","uSeason","uSolar","uGreen","uQual","uCloudFade","uEclipse","uEclipseR","uStorm","uStorm2","uStorm3","uSunLat"))
 });
 const cloudMesh=new THREE.Mesh(new THREE.IcosahedronGeometry(1.028,14),cloudMat);
 scene.add(cloudMesh);
@@ -1790,7 +1804,7 @@ scene.add(atmoMesh);
 
 const auroraMat=new THREE.ShaderMaterial({
   vertexShader:ATMO_VERT,fragmentShader:AURORA_FRAG,transparent:true,depthWrite:false,
-  blending:THREE.AdditiveBlending,uniforms:Object.assign({uSun:U.uSunA,uCam:U.uCamA},pick("uTime","uStrength","uQual"))
+  blending:THREE.AdditiveBlending,uniforms:Object.assign({uSun:U.uSunA,uCam:U.uCamA},pick("uTime","uStrength","uQual","uAurLat","uAurWid"))
 });
 const auroraMesh=new THREE.Mesh(new THREE.IcosahedronGeometry(1.048,16),auroraMat);
 scene.add(auroraMesh);
@@ -2134,6 +2148,7 @@ function civTick(dt){
         if(edge)fr.push(i);
       }
       c.front=fr.length>700?fr.filter(()=>Math.random()<700/fr.length):fr;
+      refreshCoast(c);
       for(const ojs in seen){
         const oj=+ojs,other=S.civs[oj-1];if(!other||!other.alive)continue;
         if(!c.met)c.met={};
@@ -2165,6 +2180,7 @@ function civTick(dt){
           }
         }
       }
+      if(!did&&reachOf(c)>0&&Math.random()<0.08){if(navalExpand(c))did=true;}
       if(!did&&Math.random()<0.3)c.front.splice(fi,1);
     }
     // demography
@@ -2364,6 +2380,7 @@ function forge(morph){
       pl.sim.firstVisit=false;
     }
     if(!morph)instantiateAbstract(pl);
+  buildWorks();
     syncIdentity();buildLabels();addCityLabels();buildSatLabels();drawMap();buildLegend();
     showGen(false);
     S.lastGen=performance.now()-t0;
@@ -3736,7 +3753,7 @@ function restoreFocused(p){
   U.uForm.value=1;
   applyFocusLook();computeHab();syncIdentity();
   buildLabels();addCityLabels();buildSatLabels();drawMap();buildLegend();
-  rebuildChron(p);buildRoutes();refreshCladeUniforms();refreshFaith();refreshStormUniforms();
+  rebuildChron(p);buildRoutes();buildWorks();refreshCladeUniforms();refreshFaith();refreshStormUniforms();
   S.lastGen=0;
 }
 function backfillStages(p){
@@ -3758,7 +3775,8 @@ function backfillStages(p){
 function resetGridSim(p){
   S.wars=[];S.replay=null;S.faiths=[];S.langs=[];S.faithCells=[];
   if(S.faith)S.faith.fill(0);
-  if(p&&p.sim)p.sim.storms=[];
+  if(p&&p.sim){p.sim.storms=[];p.sim.works=[];}
+  S.flare=0;S.flareF=0;
   S.civs=[];S.bio=p?p.sim.bio:0;stageIdx=p?p.sim.stage:0;
   S.impactWinter=p?p.sim.impactWinter:0;S.iceState=p?p.sim.iceState:"";S.lastSeaEv=0;S.deadNoted=p?p.sim.deadNoted:false;
   S.hist=p?p.sim.hist:[];
@@ -3839,7 +3857,7 @@ function starDirFromFocus(out){
 
 /* ---------- labels: what you see depends on how close you are ---------- */
 function buildSatLabels(){
-  labels=labels.filter(l=>{if(l.cls==='sat'||l.cls==='moon'||l.cls==='sky'){l.d.remove();return false;}return true;});
+  labels=labels.filter(l=>{if(l.cls==='sat'||l.cls==='moon'||l.cls==='sky'||l.cls==='work'){l.d.remove();return false;}return true;});
   if(S.mode==='sys')return;
   const p=curPlanet();
   if(p&&p.sim)for(const s of p.sim.sats){
@@ -3849,6 +3867,13 @@ function buildSatLabels(){
   for(const m of moons){
     const d=document.createElement('div');d.className='wlbl moon';d.textContent=m.name+(m.base?' \u25c6':'');
     labelLayer.appendChild(d);labels.push({d,moon:m,cls:'moon'});
+  }
+  const WL=worksList();
+  if(WL&&!S.gas)for(const w of WL){
+    const d=document.createElement('div');d.className='wlbl work';d.textContent=w.name;
+    labelLayer.appendChild(d);
+    const i=w.cells[Math.floor(w.cells.length/2)];
+    labels.push({d,v:new THREE.Vector3(W.geo.pos[i*3],W.geo.pos[i*3+1],W.geo.pos[i*3+2]),cls:'work'});
   }
   for(const c of (SYS.comets||[])){
     const d=document.createElement('div');d.className='wlbl sky';d.innerHTML=c.name+'<i>comet</i>';
@@ -3870,6 +3895,7 @@ function lodAlpha(cls,L){
       if(capital)return d<3.6?1:clamp((4.4-d)/0.8,0,1);
       return d<2.5?1:clamp((3.0-d)/0.5,0,1);
     }
+    case 'work':return d<3.4?clamp((3.4-d)/0.7,0,1):0;
     case 'sat':return d<2.2?clamp((2.2-d)/0.5,0,1):0;
     case 'moon':return d<10?1:clamp((14-d)/4,0,1);
     case 'sky':return d>2.4?clamp((d-2.4)/0.8,0,1):0;
@@ -4525,6 +4551,16 @@ function buildCodex(){
         }
         push('</table>');
       }
+      const wk=(f.sim.works||[]);
+      if(wk.length){
+        push(`<h3>Great works</h3><table class="ctab"><tr><th>Work</th><th>Kind</th><th>Built</th><th>By</th></tr>`,`\n### Great works`);
+        for(const w of wk){
+          const b=S.civs[w.builder-1];
+          push(`<tr><td>${esc(w.name)}</td><td>${w.kind}</td><td>YR ${Math.round(w.built).toLocaleString()}</td><td>${b?esc(b.title):'\u2014'}</td></tr>`,
+               `- ${w.name} (${w.kind}), YR ${Math.round(w.built)}${b?', by '+b.title:''}`);
+        }
+        push('</table>');
+      }
       const st=(f.sim.storms||[]).filter(x=>x.name);
       if(st.length)push(`<p class="hnote">Storms at sea: ${st.map(x=>esc(x.name)).join(', ')}.</p>`,`\nStorms: ${st.map(x=>x.name).join(', ')}`);
     }
@@ -4606,6 +4642,7 @@ function sfx(kind){
     case 'eclipse':tone('sine',220,0,4.5,0.11,0,2.2);tone('sine',330,0,4.5,0.08,0.4,2.4);tone('triangle',110,0,5,0.07,0,3);break;
     case 'found':[392,494,587,784].forEach((f,k)=>tone('sine',f,0,0.9,0.12,k*0.22));tone('triangle',196,0,2.2,0.06,0,0.3);break;
     case 'peace':[262,330,392,523].forEach(f=>tone('sine',f,0,2.6,0.07,0,0.8));break;
+    case 'flare':{noise(6,300,5200,0.30,'highpass');tone('sawtooth',70,240,6,0.12,0,2.0);tone('sine',880,240,5,0.07,0.3,1.4);break;}
     case 'storm':{noise(7,90,900,0.34,'bandpass');noise(7,1800,300,0.16,'highpass');tone('sine',44,30,7,0.15,0,1.4);break;}
     case 'faith':{[196,262,311,392,523].forEach((f,k)=>tone('sine',f,0,4.2,0.055,k*0.16,1.1));tone('triangle',98,0,4.6,0.05,0,1.6);break;}
     case 'comet':{const o=ctx.createOscillator();o.type='sine';o.frequency.value=1180;const l=ctx.createOscillator();l.frequency.value=5.5;const lg=ctx.createGain();lg.gain.value=18;l.connect(lg);lg.connect(o.frequency);
@@ -5100,23 +5137,6 @@ function tempAtCell(i){
   const P=curClimate(),sea=U.uSea.value;
   return tempAt(W.geo.pos[i*3+1],W.elev[i]-sea,P,0)+(W.curr?W.curr[i]:0);
 }
-function spawnStorm(){
-  const L=stormList();if(!L||L.length>=MAXSTORM||!W.wind)return;
-  const sea=U.uSea.value,p=W.geo.pos;
-  for(let t=0;t<400;t++){
-    const i=(Math.random()*W.V)|0;
-    if(W.elev[i]>=sea)continue;
-    const y=p[i*3+1];
-    const lat=Math.abs(Math.asin(clamp(y,-1,1))*180/Math.PI);
-    if(lat<6||lat>32)continue;
-    if(tempAtCell(i)<24)continue;
-    L.push({v:new THREE.Vector3(p[i*3],y,p[i*3+2]).normalize(),
-      inten:0.10,rad:0.05,hand:y>=0?1:-1,phase:Math.random()*6.28,
-      max:0.3+Math.random()*Math.random()*0.75,
-      age:0,name:null,peak:0,over:'sea',born:S.year});
-    return;
-  }
-}
 function stormLandfall(s,i){
   const nm=s.name||(s.name=W.lex.word(1,2));
   const own=S.owner?S.owner[i]:0;
@@ -5153,18 +5173,21 @@ function stormTick(dts){
     _sv2.normalize();
     s.v.addScaledVector(_sv2,0.06*dts).normalize();
     const absLat=Math.abs(Math.asin(clamp(s.v.y,-1,1))*180/Math.PI);
-    if(!land&&T>23&&absLat<38)s.inten=Math.min(s.max,s.inten+dts*0.085*clamp((T-22)/9,0,1));
-    else s.inten-=dts*(land?0.17:(absLat>38?0.11:0.055));
-    s.rad=0.042+s.inten*0.055;
+    const fed=stormFeeds(s,i,land,T)&&(s.kind!=='cyclone'||absLat<38);
+    if(fed)s.inten=Math.min(s.max,s.inten+dts*0.085);
+    else s.inten-=dts*(s.kind==='cyclone'?(land?0.17:(absLat>38?0.11:0.055)):0.10);
+    s.rad=(s.kind==='cyclone'?0.042:0.05)+s.inten*0.055;
     s.peak=Math.max(s.peak,s.inten);
     if(!s.name&&s.inten>0.52){
       s.name=W.lex.word(1,2);
-      ev('geo',`A cyclone tightens over <b>${oceanName(0)}</b>; it is named <b>${s.name}</b>.`);
+      if(s.kind==='cyclone')ev('geo',`A cyclone tightens over <b>${oceanName(0)}</b>; it is named <b>${s.name}</b>.`);
+      else ev('geo',`A ${STORM_KINDS[s.kind].label} gathers over ${placeOf(i)}; it is named <b>${s.name}</b>.`);
     }
-    if(land&&s.over==='sea'&&s.inten>0.4)stormLandfall(s,i);
+    if(s.kind==='cyclone'){if(land&&s.over==='sea'&&s.inten>0.4)stormLandfall(s,i);}
+    else stormOverland(s,i);
     s.over=land?'land':'sea';
     if(s.inten<=0.02||s.age>75){
-      if(s.name&&s.peak>0.6)ev('geo',`<b>${s.name}</b> breaks up and is struck from the register.`);
+      if(s.name&&s.peak>0.6)ev('geo',`<b>${s.name}</b> ${s.kind==='cyclone'?'breaks up and is struck from the register':'blows itself out'}.`);
       L.splice(k,1);
     }
   }
@@ -5178,6 +5201,7 @@ function refreshStormUniforms(){
     if(!s||S.gas){U.uStorm.value[i].set(0,1,0,0);continue;}
     U.uStorm.value[i].set(s.v.x,s.v.y,s.v.z,clamp(s.inten,0,1));
     U.uStorm2.value[i].set(Math.cos(s.rad),s.hand,s.rad,s.phase);
+    U.uStorm3.value[i].set(s.tint[0],s.tint[1],s.tint[2],s.spiral);
   }
 }
 function drawStormsOnMap(){
@@ -5190,7 +5214,8 @@ function drawStormsOnMap(){
     const x=((Math.atan2(s.v.z,s.v.x)+Math.PI)/(2*Math.PI))*c.width;
     const y=(0.5-Math.asin(clamp(s.v.y,-1,1))/Math.PI)*c.height;
     const r=Math.max(3.5,s.rad*c.height/Math.PI*2.2);
-    ctx.strokeStyle='rgba(238,244,255,'+(0.3+0.55*s.inten).toFixed(2)+')';
+    const tc=s.tint||[1,1,1];
+    ctx.strokeStyle='rgba('+Math.round(tc[0]*238)+','+Math.round(tc[1]*244)+','+Math.round(tc[2]*255)+','+(0.3+0.55*s.inten).toFixed(2)+')';
     ctx.lineWidth=1.1;
     for(let arm=0;arm<2;arm++){
       ctx.beginPath();
@@ -5367,6 +5392,334 @@ function driftLanguage(c,dy){
 <script>
 "use strict";
 /* ============================================================================
+   STAGE G - kinds of weather, flares, ships, and things people build
+   ========================================================================== */
+
+/* ---------- weather comes in kinds ---------- */
+const STORM_KINDS={
+  cyclone :{tint:[1.00,1.00,1.00],spiral:1.00,label:'cyclone'},
+  dust    :{tint:[0.88,0.68,0.36],spiral:0.22,label:'dust storm'},
+  blizzard:{tint:[0.80,0.90,1.00],spiral:0.45,label:'blizzard'}
+};
+function pickStormSite(){
+  const sea=U.uSea.value,p=W.geo.pos;
+  const want=Math.random();
+  for(let t=0;t<500;t++){
+    const i=(Math.random()*W.V)|0;
+    const y=p[i*3+1];
+    const lat=Math.abs(Math.asin(clamp(y,-1,1))*180/Math.PI);
+    const land=W.elev[i]>=sea;
+    const T=tempAtCell(i);
+    if(want<0.55){
+      if(land||lat<6||lat>32||T<24)continue;
+      return {i,kind:'cyclone'};
+    }else if(want<0.82){
+      if(!land||T<18||W.rain[i]>0.20)continue;
+      return {i,kind:'dust'};
+    }else{
+      if(!land||T>-3||lat<38)continue;
+      return {i,kind:'blizzard'};
+    }
+  }
+  return null;
+}
+function spawnStorm(){
+  const L=stormList();if(!L||L.length>=MAXSTORM||!W.wind)return;
+  const site=pickStormSite();if(!site)return;
+  const p=W.geo.pos,i=site.i,y=p[i*3+1];
+  const K=STORM_KINDS[site.kind];
+  L.push({v:new THREE.Vector3(p[i*3],y,p[i*3+2]).normalize(),
+    kind:site.kind,tint:K.tint,spiral:K.spiral,
+    inten:0.10,rad:site.kind==='cyclone'?0.05:0.06,hand:y>=0?1:-1,phase:Math.random()*6.28,
+    max:(site.kind==='cyclone'?0.3+Math.random()*Math.random()*0.75:0.28+Math.random()*0.5),
+    age:0,name:null,peak:0,over:'sea',born:S.year,lastHit:-1e9});
+}
+function stormFeeds(s,i,land,T){
+  if(s.kind==='cyclone')return !land&&T>23;
+  if(s.kind==='dust')return land&&T>16&&W.rain[i]<0.26;
+  return land&&T<0;
+}
+function stormOverland(s,i){
+  if(s.kind==='cyclone'||s.inten<0.42)return;
+  if(S.year-s.lastHit<700)return;
+  if(!S.owner||!S.owner[i]||S.pop[i]<0.05)return;
+  s.lastHit=S.year;
+  const civ=S.civs[S.owner[i]-1];if(!civ||!civ.alive)return;
+  const nm=s.name||(s.name=W.lex.word(1,2));
+  let hit=0;
+  brushCells(i,(j,t)=>{if(W.elev[j]>=U.uSea.value&&S.pop[j]>0.02){S.pop[j]*=1-0.22*(1-t)*s.inten;hit++;}},s.rad*1.4);
+  if(s.kind==='dust')
+    ev('cat',`<b>${nm}</b>, a dust storm out of the interior, buries the roads of <b>${civ.title}</b>; ${R(['the wells choke','caravans are lost','the sun is red for a month'])}.`);
+  else
+    ev('cat',`<b>${nm}</b>, a blizzard, closes the passes of <b>${civ.title}</b>; ${R(['the high villages are cut off','the herds freeze','the winter stores run out early'])}.`);
+  if(hit)refreshPack2();
+  momentStorm(i,nm,STORM_KINDS[s.kind].label+' \u00b7 '+civ.title);
+}
+
+/* ---------- the star turns on them ---------- */
+function flareRate(){
+  const c=SYS.star?SYS.star.cls:'G';
+  return c==='M'?2.4:(c==='K'?1.5:(c==='G'?1.0:0.6));
+}
+function startFlare(){
+  S.flare=9+Math.random()*9;S.flareMax=S.flare;
+  const p=curPlanet();
+  const sats=(p&&p.sim.sats)||[];
+  const lost=Math.min(sats.length,Math.round(sats.length*(0.2+Math.random()*0.5)));
+  if(lost>0){sats.splice(0,lost);buildSatLabels();}
+  const lowLat=Math.round(52-Math.random()*18);
+  ev('cat',`<b>The star flares.</b> ${SYS.star.name} throws a mass of its own atmosphere at <b>${W.pname}</b>; `+
+    `the aurora burns as far as ${lowLat}\u00b0`+(lost?`, and ${lost} satellite${lost===1?' is':'s are'} lost.`:'.'));
+  const yv=(Math.random()<0.5?1:-1);
+  let ci=-1,bd=-2;
+  for(let t=0;t<300;t++){
+    const i=(Math.random()*W.V)|0;
+    const y=W.geo.pos[i*3+1]*yv;
+    if(y>bd&&y<0.94){bd=y;ci=i;}
+  }
+  if(ci>=0&&!S.gas)pushMoment({pri:3,dur:11,cell:ci,dist:2.6,rate:1.4,sfx:'flare',
+    kicker:'SOLAR STORM \u00b7 YR '+Math.round(S.year).toLocaleString(),title:'The star flares',
+    sub:'aurora to '+lowLat+'\u00b0'+(lost?' \u00b7 '+lost+' satellites lost':''),
+    fx:()=>{CINE.aurWas=auroraMesh.visible;auroraMesh.visible=true;flash(0.25);}, 
+    after:()=>{if(CINE.aurWas!==undefined)auroraMesh.visible=CINE.aurWas;}});
+}
+function flareTick(dts){
+  if(S.flare>0){S.flare=Math.max(0,S.flare-dts);}
+  else if(!S.gas&&W.V&&Math.random()<0.00055*dts*flareRate())startFlare();
+  const f=S.flare>0?clamp(S.flare/Math.max(1,S.flareMax),0,1):0;
+  S.flareF=f;
+  U.uAurLat.value=1.19-f*0.44;
+  U.uAurWid.value=0.105+f*0.22;
+}
+
+/* ---------- ships ---------- */
+function reachOf(c){
+  if(c.era>=7)return 0.34;
+  if(c.era>=5)return 0.20;
+  if(c.era>=4)return 0.11;
+  return 0;
+}
+function refreshCoast(c){
+  const nbr=W.geo.nbr,nct=W.geo.nct,sea=U.uSea.value,out=[];
+  const n=c.cells.length;
+  for(let t=0;t<Math.min(n,400);t++){
+    const i=c.cells[(Math.random()*n)|0];
+    if(W.elev[i]<sea)continue;
+    for(let k=0;k<nct[i];k++)if(W.elev[nbr[i*6+k]]<sea){out.push(i);break;}
+    if(out.length>=28)break;
+  }
+  c.coast=out;
+}
+const _nv=new THREE.Vector3(),_nd=new THREE.Vector3(),_np=new THREE.Vector3();
+function navalExpand(c){
+  const reach=reachOf(c);
+  if(!reach||!c.coast||!c.coast.length)return false;
+  const p=W.geo.pos,sea=U.uSea.value;
+  const i=c.coast[(Math.random()*c.coast.length)|0];
+  _nv.set(p[i*3],p[i*3+1],p[i*3+2]).normalize();
+  let perp=_nd.set(0,1,0).cross(_nv);
+  if(perp.lengthSq()<0.01)perp.set(1,0,0).cross(_nv);
+  perp.normalize();
+  const a=Math.random()*6.2831853;
+  const tang=_np.copy(perp).multiplyScalar(Math.cos(a))
+    .addScaledVector(_nv.clone().cross(perp),Math.sin(a)).normalize();
+  let crossedWater=false;
+  for(let step=1;step<=14;step++){
+    const d=reach*step/14;
+    const q=_nv.clone().multiplyScalar(Math.cos(d)).addScaledVector(tang,Math.sin(d));
+    const j=nearestVertex(q.x,q.y,q.z);
+    if(W.elev[j]<sea){crossedWater=true;continue;}
+    if(!crossedWater)return false;              // it must actually be overseas
+    if(S.owner[j]!==0||S.hab[j]<0.06)return false;
+    S.owner[j]=c.id;S.pop[j]=S.hab[j]*0.25;c.cells.push(j);c.front.push(j);
+    if(!c.overseas){c.overseas=1;
+      ev('civ',`<b>${c.title}</b> plants a colony beyond the water, on ${placeOf(j)}. Its ${ERAS[c.era]} shipwrights have made the crossing routine.`);}
+    return true;
+  }
+  return false;
+}
+function navalContact(){
+  const live=S.civs.filter(c=>c.alive&&reachOf(c)>0);
+  if(live.length<2)return;
+  const p=W.geo.pos;
+  for(let x=0;x<live.length;x++)for(let y=x+1;y<live.length;y++){
+    const A=live[x],B=live[y];
+    if(A.met&&A.met[B.id])continue;
+    const R=Math.max(reachOf(A),reachOf(B))*1.5;
+    if(!A.coast||!B.coast)continue;
+    const lim=Math.cos(R);
+    let found=false;
+    for(const i of A.coast){
+      for(const j of B.coast){
+        const dp=p[i*3]*p[j*3]+p[i*3+1]*p[j*3+1]+p[i*3+2]*p[j*3+2];
+        if(dp>lim){found=true;break;}
+      }
+      if(found)break;
+    }
+    if(found){
+      A.met=A.met||{};B.met=B.met||{};A.met[B.id]=1;B.met[A.id]=1;
+      ev('civ',`Sails on the horizon: <b>${A.title}</b> and <b>${B.title}</b> meet across open water for the first time.`);
+    }
+  }
+}
+
+/* ---------- great works ---------- */
+const WORK_COL={wall:[0.86,0.74,0.48],canal:[0.34,0.82,0.92],ring:[0.95,0.60,0.30],monument:[1.0,0.86,0.45]};
+function worksList(){const p=curPlanet();if(!p||!p.sim)return null;if(!p.sim.works)p.sim.works=[];return p.sim.works;}
+function findWall(c){
+  const nbr=W.geo.nbr,nct=W.geo.nct,owner=S.owner,out=[];
+  for(const i of c.cells){
+    if(owner[i]!==c.id)continue;
+    let edge=false;
+    for(let k=0;k<nct[i];k++){const oj=owner[nbr[i*6+k]];if(oj&&oj!==c.id){edge=true;break;}}
+    if(edge)out.push(i);
+    if(out.length>=70)break;
+  }
+  return out.length>=12?out:null;
+}
+function findCanal(c){
+  const nbr=W.geo.nbr,nct=W.geo.nct,sea=U.uSea.value;
+  const oceanAt=i=>{for(let k=0;k<nct[i];k++){const j=nbr[i*6+k];if(W.elev[j]<sea)return W.comp?W.comp[j]:1;}return 0;};
+  for(let t=0;t<140;t++){
+    const start=c.cells[(Math.random()*c.cells.length)|0];
+    if(W.elev[start]<sea)continue;
+    const oc=oceanAt(start);if(!oc)continue;
+    const prev={},q=[start],depth={};let qi=0;prev[start]=-1;depth[start]=0;
+    while(qi<q.length&&qi<220){
+      const i=q[qi++];
+      const oc2=oceanAt(i);
+      if(oc2&&i!==start&&depth[i]>=3&&(oc2!==oc||depth[i]<=9)){
+        const path=[];let n=i;
+        while(n!==-1&&path.length<40){path.push(n);n=prev[n];}
+        if(path.length>=4&&path.length<=14)return path;
+        continue;
+      }
+      for(let k=0;k<nct[i];k++){
+        const j=nbr[i*6+k];
+        if(W.elev[j]<sea||prev[j]!==undefined)continue;
+        prev[j]=i;depth[j]=depth[i]+1;q.push(j);
+      }
+    }
+  }
+  return null;
+}
+function addWork(kind,c,cells,name){
+  const L=worksList();if(!L||L.length>=18)return null;
+  const w={kind,cells,name,builder:c?c.id:0,built:S.year,col:WORK_COL[kind]};
+  L.push(w);buildWorks();buildSatLabels();
+  return w;
+}
+function worksTick(dy){
+  if(S.gas||!S.civs.length)return;
+  const L=worksList();if(!L)return;
+  for(const c of S.civs){
+    if(!c.alive||Math.random()>0.0011*dy)continue;
+    c.works=c.works||{};
+    if(c.era>=8&&!c.works.ring&&c.cells.length>200){
+      const pts=[];
+      for(let t=0;t<160&&pts.length<10;t++){
+        const i=c.cells[(Math.random()*c.cells.length)|0];
+        if(S.owner[i]===c.id&&W.elev[i]>=U.uSea.value)pts.push(i);
+      }
+      if(pts.length>=6){
+        c.works.ring=1;
+        const w=addWork('ring',c,pts,'the '+W.lex.word(1,2)+' Launch Ring');
+        if(w){ev('civ',`<b>${c.title}</b> completes <b>${w.name}</b> \u2014 ${pts.length} pads strung across its territory.`);
+          momentGeneric('GREAT WORK',w.name,c.title,pts[0],2.2,'found');}
+        return;
+      }
+    }
+    if(c.era>=4&&!c.works.canal&&S.year-(c.works.canalTried||-1e9)>2500){
+      c.works.canalTried=S.year;
+      const path=findCanal(c);
+      if(path){
+        c.works.canal=1;
+        const w=addWork('canal',c,path,'the '+W.lex.word(1,2)+' Cut');
+        if(w){ev('civ',`<b>${c.title}</b> digs <b>${w.name}</b> through the isthmus at ${placeOf(path[0])}; two seas are joined.`);
+          momentGeneric('GREAT WORK',w.name,'two seas joined \u00b7 '+c.title,path[Math.floor(path.length/2)],1.9,'found');}
+        return;
+      }
+    }
+    if(c.era>=2&&!c.works.wall&&c.wars>=1){
+      const cells=findWall(c);
+      if(cells){
+        c.works.wall=1;
+        const w=addWork('wall',c,cells,'the Long Wall of '+c.cap);
+        if(w){ev('civ',`<b>${c.title}</b> raises <b>${w.name}</b> along its frontier, ${Math.round(cells.length*110)} km of stone and ditch.`);
+          momentGeneric('GREAT WORK',w.name,c.title,cells[0],2.1,'found');}
+        return;
+      }
+    }
+    if(c.era>=2&&!c.works.monument&&c.cells.length>260){
+      c.works.monument=1;
+      const w=addWork('monument',c,[c.capital],R(['the Beacon of ','the Great Seat of ','the Pillar of '])+c.cap);
+      if(w)ev('civ',`<b>${w.name}</b> is raised over <b>${c.cap}</b>; it can be seen from the sea.`);
+      return;
+    }
+  }
+}
+let worksMesh=null,worksPts=null;
+const worksMat=new THREE.ShaderMaterial({vertexShader:ROUTE_VERT,fragmentShader:ROUTE_FRAG,
+  transparent:true,depthWrite:false,
+  uniforms:Object.assign({uOpacity:{value:0.9}},pick("uSea","uRelief","uUnit","uForm"))});
+function buildWorks(){
+  if(worksMesh){globe.remove(worksMesh);worksMesh.geometry.dispose();worksMesh=null;}
+  if(worksPts){globe.remove(worksPts);worksPts.geometry.dispose();worksPts=null;}
+  const L=worksList();if(!L||!L.length||S.gas)return;
+  const pos=W.geo.pos,nbr=W.geo.nbr,nct=W.geo.nct;
+  const P=[],E=[],C=[],PP=[],PS=[],PC=[];
+  for(const w of L){
+    const col=w.col;
+    if(w.kind==='ring'||w.kind==='monument'){
+      for(const i of w.cells){
+        PP.push(pos[i*3],pos[i*3+1],pos[i*3+2]);
+        PS.push(w.kind==='monument'?5.5:4.0);
+        PC.push(col[0],col[1],col[2]);
+      }
+      continue;
+    }
+    const set={};for(const i of w.cells)set[i]=1;
+    for(const i of w.cells){
+      for(let k=0;k<nct[i];k++){
+        const j=nbr[i*6+k];
+        if(!set[j]||j<i)continue;
+        P.push(pos[i*3],pos[i*3+1],pos[i*3+2],pos[j*3],pos[j*3+1],pos[j*3+2]);
+        E.push(W.elev[i],W.elev[j]);
+        C.push(col[0],col[1],col[2],col[0],col[1],col[2]);
+      }
+    }
+    if(w.kind==='canal'){
+      for(let k=0;k+1<w.cells.length;k++){
+        const i=w.cells[k],j=w.cells[k+1];
+        P.push(pos[i*3],pos[i*3+1],pos[i*3+2],pos[j*3],pos[j*3+1],pos[j*3+2]);
+        E.push(W.elev[i],W.elev[j]);
+        C.push(col[0],col[1],col[2],col[0],col[1],col[2]);
+      }
+    }
+  }
+  if(P.length){
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(P),3));
+    g.setAttribute('aElev',new THREE.BufferAttribute(new Float32Array(E),1));
+    g.setAttribute('aCol',new THREE.BufferAttribute(new Float32Array(C),3));
+    g.boundingSphere=new THREE.Sphere(new THREE.Vector3(),1.4);
+    worksMesh=new THREE.LineSegments(g,worksMat);worksMesh.renderOrder=3;globe.add(worksMesh);
+  }
+  if(PP.length){
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(PP),3));
+    g.setAttribute('aSize',new THREE.BufferAttribute(new Float32Array(PS),1));
+    g.setAttribute('aCol',new THREE.BufferAttribute(new Float32Array(PC),3));
+    g.boundingSphere=new THREE.Sphere(new THREE.Vector3(),1.4);
+    worksPts=new THREE.Points(g,new THREE.ShaderMaterial({vertexShader:STAR_VERT,fragmentShader:STAR_FRAG,
+      transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+    worksPts.renderOrder=3;globe.add(worksPts);
+  }
+}
+</script>
+<script>
+"use strict";
+/* ============================================================================
    MAIN LOOP
    ========================================================================== */
 const _sunW=new THREE.Vector3(),_tmp=new THREE.Vector3(),_camL=new THREE.Vector3();
@@ -5380,7 +5733,7 @@ function simulate(dt){
   globe.rotation.y+=dSpin;
   if(!S.spin&&S.mode==='world'){cam.theta+=dSpin;cam.tTheta+=dSpin;}
   S.sysT+=dt*Math.min(sp,4);
-  stormTick(dt*Math.min(sp,4));
+  stormTick(dt*Math.min(sp,4));flareTick(dt*Math.min(sp,4));
   const dy=dt*sp*2.6;
   S.year+=dy;
   if(S.impactWinter<0)S.impactWinter=Math.min(0,S.impactWinter+dt*sp*0.30);
@@ -5454,13 +5807,13 @@ function simulate(dt){
     S.routeAcc=(S.routeAcc||0)+civAcc;
     if(S.routeAcc>2.5){S.routeAcc=0;buildRoutes();}
     const dyAbs=civAcc*sp*2.6;
-    faithTick(dyAbs);
+    faithTick(dyAbs);worksTick(dyAbs);
     cladeTick(curPlanet(),dyAbs,true);
     for(const p of SYS.planets)if(p.idx!==SYS.focus&&p.sim){abstractTick(p,dyAbs);cladeTick(p,dyAbs,false);}
     civAcc=0;
   }
   borderAcc+=dt;
-  if(borderAcc>0.7&&S.civs.length){recomputeBorders();borderAcc=0;}
+  if(borderAcc>0.7&&S.civs.length){recomputeBorders();navalContact();borderAcc=0;}
   packAcc+=dt;
   if(packAcc>0.3&&S.civs.length){refreshPack2();packAcc=0;}
 }
@@ -5521,7 +5874,7 @@ function frame(){
   _tmp.copy(_sunW);globe.worldToLocal(_tmp);U.uSun.value.copy(_tmp).normalize();
   _tmp.copy(camera.position);globe.worldToLocal(_tmp);U.uCam.value.copy(_tmp);
   updateForcing();
-  U.uStrength.value=(S.toggles.aurora?1:0)*clamp(0.5+Math.sin(now*0.0004)*0.5,0.25,1);
+  U.uStrength.value=(S.toggles.aurora?1:0)*(clamp(0.5+Math.sin(now*0.0004)*0.5,0.25,1)+(S.flareF||0)*2.4);
   // moons
   for(const m of moons){
     const a=S.sysT*0.075*m.speed+m.phase;
