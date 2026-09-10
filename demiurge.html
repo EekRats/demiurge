@@ -485,6 +485,7 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
           <button id="btn-snowball" class="danger">Snowball</button>
           <button id="btn-runaway" class="danger">Runaway</button>
         </div>
+        <p class="hint" id="toolnote" hidden>No surface here. On a gas giant only the probe reads out and an impactor leaves a mark; terraforming, uplift and the brushes need rock.</p>
         <div class="ctrl"><span class="lbl">Terraforming campaign</span>
           <div class="grid4" id="campaigns">
             <button data-camp="warm">Warm</button>
@@ -640,7 +641,7 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
           <p class="hnote">The seed builds a whole star system, not one planet. A star is drawn with a real spectral class, and its luminosity sets where the habitable zone falls. Planets are spaced outward, and what each one <i>is</i> follows from where it landed: molten close in, rock and water in the zone, ice and giants past the snow line.</p>
           <dl class="hrow"><dt>Planet list</dt><dd>Click any row to generate that world in full and travel to it. Its insolation, tilt and climate come from its actual orbit, so the outer worlds really are frozen.</dd></dl>
           <dl class="hrow"><dt>Orrery</dt><dd>The <b>System</b> view: orbits to scale in order, the star, and the habitable zone drawn as a green band. Click a planet out there to visit it. <b>V</b> toggles.</dd></dl>
-          <dl class="hrow"><dt>Giants</dt><dd>Gas and ice giants have no surface. You get banded cloud decks with real differential rotation and a persistent storm instead, and the probe reads cloud-top conditions.</dd></dl>
+          <dl class="hrow"><dt>Giants</dt><dd>Gas and ice giants have no surface. You get banded cloud decks with real differential rotation and a persistent storm instead, and the probe reads cloud-top conditions. Terraforming, uplift and the terrain brushes need rock, so they are greyed out there; an impactor still leaves its mark in the chronicle.</dd></dl>
           <dl class="hrow"><dt>Colonies</dt><dd>A civilisation that reaches its orbital age will launch for another planet. Watch the craft cross in the orrery; the target is marked once they land.</dd></dl>
           <dl class="hrow"><dt>Companions</dt><dd>About one system in five has a second star in a tight orbit. It adds its light to the habitable zone and shows as a second sun close beside the first.</dd></dl>
           <dl class="hrow"><dt>Comets</dt><dd>Long, eccentric orbits drawn in the orrery. When one swings inside about three AU of your world it appears in the sky with a tail, and a close perihelion sometimes ends in a strike.</dd></dl>
@@ -2496,6 +2497,17 @@ function applyTool(ci){
   const pos=W.geo.pos,elev=W.elev,nz=W.noise;
   const km=Math.round(S.brush*Math.PI*6371);
   if(S.tool==='scan'){scanAt(ci);return;}
+  if(S.gas){
+    const p=curPlanet();
+    if(S.tool==='impact'){
+      S.impactWinter-=Math.min(6,km*0.004);
+      ev('cat',`<b>Impact.</b> A ${fmt(km*0.006,1)} km body falls into <b>${p?p.name:W.pname}</b>. Dark scars spread along the cloud bands for a season, then the winds close over them.`);
+      toast('the clouds close over it');
+    }else{
+      toast((p?p.name:'this world')+' has no surface \u2014 '+({raise:'nothing to uplift',lower:'nothing to subside',volcano:'no crust to breach',seed:'nothing to seed',uplift:'no one to uplift'}[S.tool]||'not here'));
+    }
+    return;
+  }
   if(S.tool==='raise'||S.tool==='lower'){
     const s=(S.tool==='raise'?1:-1)*0.30;
     brushCells(ci,(i,t)=>{elev[i]+=s*Math.pow(Math.cos(t*Math.PI/2),2)*(0.75+0.5*nz(pos[i*3]*9,pos[i*3+1]*9,pos[i*3+2]*9));});
@@ -2826,7 +2838,7 @@ const TIPS={
  '#toggles':['Overlays','Turn individual layers on and off.'],
  '#quality':['Render quality','Trades shader noise detail and resolution for frame rate. The renderer also drops resolution on its own if frames run long.'],
  '#tools':['Instruments','Pick one, then click the globe. Probe reads out; the others change the world. Uplift hands a tribe civilisation early, or a polity a leap in technology.'],
- '#campaigns':['Terraforming','Slow, deliberate programmes that run over one to two thousand years and report progress in the chronicle: warm or cool the whole world, add or remove water.'],
+ '#campaigns':['Terraforming','Slow, deliberate programmes that run over one to two thousand years and report progress in the chronicle: warm or cool the whole world, add or remove water. Rocky worlds only - a gas giant has no surface to work on.'],
  '[data-layer="8"]':['Currents','Ocean heat transport. Warm boundary currents carry equatorial water poleward along the western sides of basins; cold ones bring polar water down the eastern sides. Coasts inherit their offshore water.'],
  '#r-brush':['Brush radius','How wide an area the instrument affects, in kilometres of surface.'],
  '#btn-snowball':['Snowball','Force a runaway freeze: dim the star, strip the greenhouse, watch the oceans ice over from the poles.'],
@@ -3260,6 +3272,9 @@ function applyFocusLook(){
   S.hasRing=!!p.ring;
   ringMesh.visible=!!p.ring&&!!S.toggles.rings;
   U.uThick.value=S.gas?1.7:1.0;
+  el('toolnote').hidden=!S.gas;
+  el('campaigns').style.opacity=S.gas?0.4:1;
+  [...el('tools').querySelectorAll('button')].forEach(b=>{b.style.opacity=(S.gas&&b.dataset.tool!=='scan'&&b.dataset.tool!=='impact')?0.4:1;});
 }
 
 /* ---------- orbital forcing: Milankovitch cycles and ice-volume sea level ---- */
@@ -3990,7 +4005,8 @@ const CAMPAIGNS={
   drain:{label:"Dry",slider:'r-humid',delta:-0.45,years:2200,text:"water sequestration"}
 };
 function startCampaign(kind){
-  const p=curPlanet();if(!p||S.gas)return;
+  const p=curPlanet();if(!p)return;
+  if(S.gas){toast(p.name+' is a '+PTYPES[p.type].n+' \u2014 there is no surface to terraform. Try a rocky world.');return;}
   const k=CAMPAIGNS[kind];
   p.sim.campaigns=p.sim.campaigns||[];
   if(p.sim.campaigns.some(c=>c.kind===kind)){toast('already under way');return;}
