@@ -5110,10 +5110,17 @@ function extinguish(p,c,focused,cause){
   const msg=`The last of the <b>${c.name}</b> die in ${cause}. ${Math.round(S.year-c.born).toLocaleString()} years of the ${c.niche} are ended.`;
   if(focused)ev('cat',msg);else evBg(p,'cat',`On <b>${p.name}</b> the <b>${c.name}</b> are gone.`);
 }
-function massExtinction(p,frac,cause,focused){
+function massExtinction(p,frac,cause,focused,quiet){
   const live=livingClades(p);let n=0;
   for(const c of live)if(!c.sapient&&Math.random()<frac){c.extinct=S.year;n++;}
-  if(n){const msg=`<b>Mass extinction.</b> ${n} of ${live.length} lineages vanish in ${cause}.`;if(focused)ev('cat',msg);else evBg(p,'cat',`On <b>${p.name}</b>: `+msg);}
+  if(n&&!quiet){const msg=`<b>Mass extinction.</b> ${n} of ${live.length} lineages vanish in ${cause}.`;
+    if(focused)ev('cat',msg);else evBg(p,'cat',`On <b>${p.name}</b>: `+msg);}
+  if(n&&quiet&&focused){
+    const extra=` ${n} of ${live.length} lineages do not survive it.`;
+    const rec=p&&p.sim&&p.sim.chron.length?p.sim.chron[p.sim.chron.length-1]:null;
+    if(rec)rec.h+=extra;
+    if(chron.firstChild){const tx=chron.firstChild.querySelector('.tx');if(tx)tx.innerHTML+=extra;}
+  }
   if(focused)refreshCladeUniforms();
 }
 function sapientClade(p){
@@ -5145,8 +5152,35 @@ function tempAtCell(i){
   const P=curClimate(),sea=U.uSea.value;
   return tempAt(W.geo.pos[i*3+1],W.elev[i]-sea,P,0)+(W.curr?W.curr[i]:0);
 }
+function peopleWatching(){return S.civs.some(c=>c.alive);}
+function localName(i){
+  const p=W.geo.pos,x=p[i*3],y=p[i*3+1],z=p[i*3+2];
+  let best=null,bd=Math.cos(0.17);
+  for(const c of S.civs){
+    if(!c.alive)continue;
+    const list=[{i:c.capital,n:c.cap}].concat((c.cities||[]).map(t=>({i:t.i,n:t.name})));
+    for(const ct of list){
+      const d=p[ct.i*3]*x+p[ct.i*3+1]*y+p[ct.i*3+2]*z;
+      if(d>bd){bd=d;best=ct.n;}
+    }
+  }
+  if(best)return best;
+  let br=null,brd=Math.cos(0.32);
+  for(const r of (W.ranges||[])){
+    const d=r.c[0]*x+r.c[1]*y+r.c[2]*z;
+    if(d>brd){brd=d;br=r.name;}
+  }
+  return br||placeOf(i);
+}
+function seaName(i){
+  const nbr=W.geo.nbr,nct=W.geo.nct,sea=U.uSea.value;
+  let cid=(W.elev[i]<sea)?W.comp[i]:0;
+  if(!cid)for(let k=0;k<nct[i];k++){const j=nbr[i*6+k];if(W.elev[j]<sea){cid=W.comp[j];break;}}
+  const r=cid&&W.compMap?W.compMap[cid]:null;
+  return (r&&r.name)?r.name:oceanName(0);
+}
 function stormLandfall(s,i){
-  const nm=s.name||(s.name=W.lex.word(1,2));
+  if(S.year-s.lastHit<450)return;              // a coast-hugging storm makes landfall once
   const own=S.owner?S.owner[i]:0;
   const civ=own?S.civs[own-1]:null;
   let hit=0;
@@ -5154,12 +5188,15 @@ function stormLandfall(s,i){
     if(W.elev[j]<U.uSea.value)return;
     if(S.pop[j]>0.02){S.pop[j]*=1-0.42*(1-t)*s.inten;hit++;}
   },s.rad*1.7);
+  s.lastHit=S.year;
+  if(!hit)return;                              // an empty coast: nobody is there to record it
+  const nm=s.name||(s.name=W.lex.word(1,2));
   const force=s.inten>0.82?'A great cyclone':(s.inten>0.6?'A severe cyclone':'A cyclone');
-  ev('cat',`${force}, <b>${nm}</b>, comes ashore on ${placeOf(i)}`+
-    (civ?`, across the coast of <b>${civ.title}</b>; ${R(['the harvest is lost','the harbours are wrecked','the low towns flood','thousands are displaced'])}.`
-        :`. Nothing lives there to notice.`));
-  if(hit)refreshPack2();
-  momentStorm(i,nm,(civ?civ.title+' \u00b7 ':'')+placeOf(i));
+  ev('cat',`${force}, <b>${nm}</b>, comes ashore near <b>${localName(i)}</b>`+
+    (civ?`, across the coast of <b>${civ.title}</b>`:'')+
+    `; ${R(['the harvest is lost','the harbours are wrecked','the low towns flood','thousands are displaced','the fishing fleet does not come back'])}.`);
+  refreshPack2();
+  momentStorm(i,nm,(civ?civ.title+' \u00b7 ':'')+localName(i));
 }
 function stormTick(dts){
   const L=stormList();
@@ -5186,16 +5223,16 @@ function stormTick(dts){
     else s.inten-=dts*(s.kind==='cyclone'?(land?0.17:(absLat>38?0.11:0.055)):0.10);
     s.rad=(s.kind==='cyclone'?0.042:0.05)+s.inten*0.055;
     s.peak=Math.max(s.peak,s.inten);
-    if(!s.name&&s.inten>0.52){
+    if(!s.name&&s.inten>0.52&&peopleWatching()){
       s.name=W.lex.word(1,2);
-      if(s.kind==='cyclone')ev('geo',`A cyclone tightens over <b>${oceanName(0)}</b>; it is named <b>${s.name}</b>.`);
-      else ev('geo',`A ${STORM_KINDS[s.kind].label} gathers over ${placeOf(i)}; it is named <b>${s.name}</b>.`);
+      if(s.kind==='cyclone')ev('geo',`A cyclone tightens over <b>${seaName(i)}</b>; it is named <b>${s.name}</b>.`);
+      else ev('geo',`A ${STORM_KINDS[s.kind].label} gathers over <b>${localName(i)}</b>; it is named <b>${s.name}</b>.`);
     }
     if(s.kind==='cyclone'){if(land&&s.over==='sea'&&s.inten>0.4)stormLandfall(s,i);}
     else stormOverland(s,i);
     s.over=land?'land':'sea';
     if(s.inten<=0.02||s.age>75){
-      if(s.name&&s.peak>0.6)ev('geo',`<b>${s.name}</b> ${s.kind==='cyclone'?'breaks up and is struck from the register':'blows itself out'}.`);
+      if(s.name&&s.peak>0.6&&peopleWatching())ev('geo',`<b>${s.name}</b> ${s.kind==='cyclone'?'breaks up and is struck from the register':'blows itself out'}.`);
       L.splice(k,1);
     }
   }
@@ -5457,9 +5494,9 @@ function stormOverland(s,i){
   let hit=0;
   brushCells(i,(j,t)=>{if(W.elev[j]>=U.uSea.value&&S.pop[j]>0.02){S.pop[j]*=1-0.22*(1-t)*s.inten;hit++;}},s.rad*1.4);
   if(s.kind==='dust')
-    ev('cat',`<b>${nm}</b>, a dust storm out of the interior, buries the roads of <b>${civ.title}</b>; ${R(['the wells choke','caravans are lost','the sun is red for a month'])}.`);
+    ev('cat',`<b>${nm}</b>, a dust storm out of the interior, buries the roads of <b>${civ.title}</b> near <b>${localName(i)}</b>; ${R(['the wells choke','caravans are lost','the sun is red for a month'])}.`);
   else
-    ev('cat',`<b>${nm}</b>, a blizzard, closes the passes of <b>${civ.title}</b>; ${R(['the high villages are cut off','the herds freeze','the winter stores run out early'])}.`);
+    ev('cat',`<b>${nm}</b>, a blizzard, closes the passes of <b>${civ.title}</b> above <b>${localName(i)}</b>; ${R(['the high villages are cut off','the herds freeze','the winter stores run out early'])}.`);
   if(hit)refreshPack2();
   momentStorm(i,nm,STORM_KINDS[s.kind].label+' \u00b7 '+civ.title);
 }
@@ -5756,7 +5793,7 @@ function simulate(dt){
       continue;
     }
     ev(st.k,typeof st.t==='function'?st.t():st.t);
-    if(st.y===980)massExtinction(curPlanet(),0.5,'the cataclysm',true);
+    if(st.y===980)massExtinction(curPlanet(),0.5,'the cataclysm',true,true);
   }
   // ice volume and sea level
   if(!S.gas&&Math.abs((S.dSea||0)-S.lastSeaEv)>0.020){
