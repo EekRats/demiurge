@@ -457,6 +457,7 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
             <button data-layer="7">Habitability</button>
             <button data-layer="8">Currents</button>
             <button data-layer="9">Life</button>
+            <button data-layer="10">Faiths</button>
           </div>
         </div>
         <div class="ctrl"><span class="lbl">Overlays</span>
@@ -539,6 +540,8 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
           <span class="lbl">Plate</span><span class="val" id="k-plate">&#x2014;</span>
           <span class="lbl">Watershed</span><span class="val" id="k-flow">&#x2014;</span>
           <span class="lbl">Polity</span><span class="val" id="k-civ">&#x2014;</span>
+          <span class="lbl">Faith</span><span class="val" id="k-faith">&#x2014;</span>
+          <span class="lbl">Tongue</span><span class="val" id="k-lang">&#x2014;</span>
         </div>
         <div class="ctrl" style="gap:3px;margin-top:2px">
           <span class="lbl">Habitability index</span>
@@ -658,7 +661,7 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
           <dl class="hrow"><dt>H</dt><dd>Hide every panel for a clean view.</dd></dl>
           <dl class="hrow"><dt>G / R / ?</dt><dd>Graticule, new random seed, this guide.</dd></dl>
           <dl class="hrow"><dt>C / M / Esc</dt><dd>Codex, sound, leave a moon or close an overlay.</dd></dl>
-          <dl class="hrow"><dt>T / 0</dt><dd>Start or stop the tour; the Life channel.</dd></dl>
+          <dl class="hrow"><dt>T / 0 / F</dt><dd>Start or stop the tour; the Life channel; the Faiths channel.</dd></dl>
         </section>
 
         <section class="hsec">
@@ -733,6 +736,9 @@ body.hidehud #hud,body.hidehud #labels{opacity:0;pointer-events:none;transition:
           <dl class="hrow"><dt>Registry</dt><dd>Living polities with territory, population and technological era \u2014 neolithic through to orbital \u2014 and who rules each one.</dd></dl>
           <dl class="hrow"><dt>Rulers</dt><dd>Every polity has a named sovereign, consul, marshal or premier who reigns, wages the wars, presides over the golden ages, dies, and earns an epithet. Successions are usually quiet; sometimes they are not.</dd></dl>
           <dl class="hrow"><dt>Cinema</dt><dd>Big events drop time to quarter speed and pull the camera to them with a title card and a sound of their own: impacts with a shockwave and ejecta, a launch climbing on its exhaust into orbit, a lander coming down, sparks and flashes along a war front, an eclipse shadow, a comet in the sky. The <b>Tour</b> button chains a whole sequence and travels between worlds; it also starts on its own if the terminal is left idle.</dd></dl>
+          <dl class="hrow"><dt>Weather</dt><dd>Cyclones form over warm tropical water, are steered by the same winds that carry the rain, tighten while they stay at sea and are named once they do. Crossing a coast they scatter the people living there and are logged; watch one spiral in on the globe or track it across the map.</dd></dl>
+          <dl class="hrow"><dt>Faiths</dt><dd>A polity in its iron age or later may proclaim one. It spreads cell by cell through its own people, jumps to neighbours it trades with, and eventually schisms \u2014 and a sect and its parent are the bitterest enemies of all. Two polities of one faith rarely fight; two of different faiths often do, and the chronicle calls it a holy war.</dd></dl>
+          <dl class="hrow"><dt>Tongues</dt><dd>Every polity speaks a language descended from its parent's. Secession splits a tongue; long centuries drift it past its own written record. The registry and codex name them.</dd></dl>
           <dl class="hrow"><dt>Tree of life</dt><dd>Life radiates from the sea into the shore, the forests and plains, the deserts, the ice, the peaks and the air, one lineage descending from another. Ice ages, heat, impacts and snowball events cull it. The first land lineage to reach sapience founds the first polity. The <b>Life</b> channel maps who holds each niche; the codex prints the whole tree.</dd></dl>
           <dl class="hrow"><dt>Chronicle</dt><dd>Written as it happens. Amber entries are civilisations, green are biological, brown geological, red catastrophic.</dd></dl>
           <dl class="hrow"><dt>Timeline</dt><dd>Global mean temperature in amber over an ice-cover band in teal; ticks mark living polities. <b>Drag across it</b> to scrub history: borders and climate rewind to that year. Press play to return to the present.</dd></dl>
@@ -1348,9 +1354,10 @@ attribute float aElev; attribute float aElev2; attribute vec3 aNrm;
 attribute vec4 aPack1;  // rain, flow, plate, stress
 attribute vec4 aPack2;  // owner, pop, border, var
 attribute float aClim;
+attribute float aFaith;
 uniform float uSea,uRelief,uMorph,uForm,uUnit;
 varying vec3 vDir,vNrm,vWorld;
-varying float vE,vRain,vFlow,vPlate,vStress,vOwner,vPop,vBorder,vVar,vClim;
+varying float vE,vRain,vFlow,vPlate,vStress,vOwner,vPop,vBorder,vVar,vClim,vFaith;
 void main(){
   vec3 dir=normalize(position);
   float e=mix(aElev,aElev2,uMorph);
@@ -1359,7 +1366,7 @@ void main(){
   vec3 wp=dir*r;
   vDir=dir; vE=e; vNrm=normalize(mix(dir,aNrm,uForm));
   vRain=aPack1.x; vFlow=aPack1.y; vPlate=aPack1.z; vStress=aPack1.w;
-  vOwner=aPack2.x; vPop=aPack2.y; vBorder=aPack2.z; vVar=aPack2.w; vClim=aClim;
+  vOwner=aPack2.x; vPop=aPack2.y; vBorder=aPack2.z; vVar=aPack2.w; vClim=aClim; vFaith=aFaith;
   vec4 mv=modelViewMatrix*vec4(wp,1.0);
   vWorld=wp;
   gl_Position=projectionMatrix*mv;
@@ -1369,8 +1376,8 @@ const PLANET_FRAG=`
 precision highp float;
 ${NOISE_GLSL}
 varying vec3 vDir,vNrm,vWorld;
-varying float vE,vRain,vFlow,vPlate,vStress,vOwner,vPop,vBorder,vVar,vClim;
-uniform vec3 uSun,uCam,uAtmoCol,uLifeCol,uNations[16];
+varying float vE,vRain,vFlow,vPlate,vStress,vOwner,vPop,vBorder,vVar,vClim,vFaith;
+uniform vec3 uSun,uCam,uAtmoCol,uLifeCol,uNations[16],uFaith[12];
 uniform float uCurrK,uTide,uEclipseR;
 uniform vec4 uEclipse;
 uniform vec4 uClade[8];
@@ -1492,7 +1499,7 @@ void main(){
     col=a<0.0?mix(vec3(0.20,0.24,0.30),vec3(0.16,0.42,0.86),-a):mix(vec3(0.20,0.24,0.30),vec3(0.92,0.36,0.14),a);
     col*=mix(1.0,0.55,land);
     col=mix(col,vec3(0.06,0.07,0.09),land*step(abs(vClim),0.15));
-  } else {
+  } else if(uLayer<9.5){
     float h=e-uSea;
     int cls=0;
     if(land<0.5)cls=0;
@@ -1507,6 +1514,13 @@ void main(){
     vec3 base=mix(vec3(0.03,0.05,0.09),vec3(0.11,0.12,0.13),land);
     col=mix(base,cc.rgb*(0.55+0.45*fbm3(dir*9.0,2)),cc.a);
     if(uClade[7].a>0.5&&land>0.5&&cls==2)col=mix(col,uClade[7].rgb,0.25*smoothstep(0.5,0.9,vnoise(dir*40.0)));
+  } else {
+    vec3 fc=vec3(0.0);float fa=0.0;
+    int fi=int(vFaith)-1;
+    for(int i=0;i<12;i++){ if(i==fi){fc=uFaith[i];fa=1.0;} }
+    vec3 base=mix(vec3(0.045,0.065,0.105),vec3(0.24,0.245,0.25),land);
+    col=mix(base,fc*(0.62+0.5*vVar),fa*land);
+    col=mix(col,vec3(1.0),min(vBorder,1.0)*0.14*land);
   }
   // ---- lighting ----
   vec3 L=normalize(uSun);
@@ -1559,6 +1573,8 @@ varying vec3 vDir,vWorld;
 uniform vec3 uSun,uCam,uAtmoCol;
 uniform float uTime,uCover,uTilt,uSeason,uSolar,uGreen,uQual,uCloudFade,uEclipseR;
 uniform vec4 uEclipse;
+uniform vec4 uStorm[6];
+uniform vec4 uStorm2[6];
 void main(){
   vec3 d=normalize(vDir);
   float lat=asin(clamp(d.y,-1.0,1.0));
@@ -1571,10 +1587,33 @@ void main(){
   float n2=fbm3(q*2.6-spin*1.7+vec3(t*0.5,0.0,0.0),Q+1);
   float storm=smoothstep(0.62,0.95,fbm3(q*1.1+vec3(t*0.3,5.0,0.0),Q));
   float dens=(n*0.68+n2*0.42)*mix(0.72,1.18,band)+storm*0.30;
+  // tropical cyclones: banded spiral, clear eye
+  float sd=0.0;
+  for(int i=0;i<6;i++){
+    vec4 A=uStorm[i];
+    if(A.w<=0.003)continue;
+    float dp=dot(d,A.xyz);
+    vec4 B=uStorm2[i];
+    if(dp<B.x)continue;
+    float u=acos(clamp(dp,-1.0,1.0))/max(0.015,B.z);
+    vec3 up=abs(A.y)<0.9?vec3(0.0,1.0,0.0):vec3(1.0,0.0,0.0);
+    vec3 e1=normalize(cross(up,A.xyz));
+    vec3 e2=cross(A.xyz,e1);
+    float az=atan(dot(d,e2),dot(d,e1));
+    float spi=sin(az*2.0+B.y*(log(max(u,0.05))*4.4-uTime*0.55)+B.w);
+    float arms=smoothstep(-0.15,0.60,spi);
+    float core=1.0-smoothstep(0.11,0.40,u);
+    float body=mix(arms,1.0,core*0.88);
+    float eye=smoothstep(0.05,0.17,u);
+    float edge=1.0-smoothstep(0.55,1.0,u);
+    sd=max(sd,A.w*edge*eye*body);
+  }
+  dens=max(dens,sd*1.3);
   float cover=uCover;
   float t0=0.70-cover*0.34;
   float a=smoothstep(t0,t0+0.19,dens);
   a=clamp(a,0.0,1.0)*clamp(cover*1.5,0.0,1.0)*0.92*uCloudFade;
+  a=max(a,clamp(sd*1.9,0.0,1.0)*uCloudFade);
   if(a<0.004) discard;
   vec3 L=normalize(uSun);
   float ndl=clamp(dot(d,L),0.0,1.0);
@@ -1582,6 +1621,7 @@ void main(){
   ndl*=1.0-0.94*ecl;
   float rim=pow(1.0-clamp(dot(normalize(uCam-vWorld),d),0.0,1.0),2.5);
   vec3 c=mix(vec3(0.55,0.58,0.66),vec3(1.0,0.99,0.97),ndl);
+  c=mix(c,vec3(1.0),clamp(sd,0.0,1.0)*0.38*ndl);
   c=mix(c,uAtmoCol*1.3+vec3(0.5,0.25,0.12),pow(clamp(1.0-abs(dot(d,L))*3.0,0.0,1.0),3.0)*0.6);
   c*= (0.07+1.05*ndl);
   c+=vec3(0.35,0.4,0.5)*rim*ndl*0.5;
@@ -1719,6 +1759,9 @@ const U={
   uSunLat:{value:0}, uCurrK:{value:1}, uTide:{value:0.3}, uCloudFade:{value:1},
   uEclipse:{value:new THREE.Vector4(0,1,0,0)}, uEclipseR:{value:0.1},
   uClade:{value:Array.from({length:8},()=>new THREE.Vector4(0,0,0,0))},
+  uFaith:{value:Array.from({length:12},()=>new THREE.Color(1,1,1))},
+  uStorm:{value:Array.from({length:6},()=>new THREE.Vector4(0,1,0,0))},
+  uStorm2:{value:Array.from({length:6},()=>new THREE.Vector4(1,1,0.1,0))},
   uAtmoCol:{value:ATMO_COLORS[0].clone()},
   uSea:{value:0}, uRelief:{value:1}, uMorph:{value:0}, uForm:{value:0}, uUnit:{value:RELIEF_UNIT},
   uSolar:{value:1}, uGreen:{value:0}, uTilt:{value:23.4*Math.PI/180}, uSeason:{value:0},
@@ -1734,13 +1777,13 @@ const planetMat=new THREE.ShaderMaterial({
   vertexShader:PLANET_VERT,fragmentShader:PLANET_FRAG,
   uniforms:pick("uSun","uCam","uAtmoCol","uNations","uSea","uRelief","uMorph","uForm","uUnit",
                 "uSolar","uGreen","uTilt","uSeason","uSunLat","uTime","uLayer","uGrid","uLights","uNight",
-                "uPlateCount","uLifeCol","uSnowball","uQual","uCurrK","uTide","uEclipse","uEclipseR","uClade")
+                "uPlateCount","uLifeCol","uSnowball","uQual","uCurrK","uTide","uEclipse","uEclipseR","uClade","uFaith")
 });
 let planetMesh=null, riverMesh=null;
 
 const cloudMat=new THREE.ShaderMaterial({
   vertexShader:CLOUD_VERT,fragmentShader:CLOUD_FRAG,transparent:true,depthWrite:false,
-  uniforms:Object.assign({uSun:U.uSun,uCam:U.uCam},pick("uAtmoCol","uTime","uCover","uTilt","uSeason","uSolar","uGreen","uQual","uCloudFade","uEclipse","uEclipseR"))
+  uniforms:Object.assign({uSun:U.uSun,uCam:U.uCam},pick("uAtmoCol","uTime","uCover","uTilt","uSeason","uSolar","uGreen","uQual","uCloudFade","uEclipse","uEclipseR","uStorm","uStorm2"))
 });
 const cloudMesh=new THREE.Mesh(new THREE.IcosahedronGeometry(1.028,14),cloudMat);
 scene.add(cloudMesh);
@@ -1833,7 +1876,8 @@ sunPt.renderOrder=-1;sunPt.position.set(120,0,0);scene.add(sunPt);
 const S={ owner:null,pop:null,hab:null,border:null,vvar:null,
   civs:[],year:0,bio:0,stage:0,speed:1,playing:true,layer:0,
   tool:"scan",brush:0.07,impactWinter:0,driftT:0,morphing:0,spin:0,qual:2,
-  mode:null,sysT:0,gas:false,orbital:1,cine:1,attract:1,tour:false,lastInput:0,effSolar:1,effGreen:0,effTilt:23.4,lastSeaEv:0,iceState:"",
+  mode:null,sysT:0,gas:false,orbital:1,cine:1,attract:1,tour:false,lastInput:0,
+  faith:null,faiths:[],faithCells:[],langs:[],effSolar:1,effGreen:0,effTilt:23.4,lastSeaEv:0,iceState:"",
   toggles:{clouds:1,atmo:1,rivers:1,lights:1,grid:0,labels:1,rings:0,moons:1,aurora:1},
   dayAngle:0.6,seasonPhase:0,arch:"terran",atmo:0,gmt:14,pending:null };
 
@@ -1856,11 +1900,12 @@ function buildPlanetMesh(){
   geo.setAttribute('aPack1',attr(p1,4));
   geo.setAttribute('aPack2',attr(p2,4));
   geo.setAttribute('aClim',attr(W.curr?Float32Array.from(W.curr):new Float32Array(V),1));
+  geo.setAttribute('aFaith',attr(new Float32Array(V),1));
   geo.boundingSphere=new THREE.Sphere(new THREE.Vector3(),1.35);
   planetMesh=new THREE.Mesh(geo,planetMat);
   planetMesh.renderOrder=0;
   globe.add(planetMesh);
-  S.owner=new Int16Array(V);S.pop=new Float32Array(V);S.border=new Float32Array(V);
+  S.owner=new Int16Array(V);S.pop=new Float32Array(V);S.border=new Float32Array(V);S.faith=new Int16Array(V);
   refreshPack1();refreshPack2();
   buildRivers();
 }
@@ -2033,8 +2078,11 @@ function spawnCiv(seedIdx,parent){
     title:name+" "+R(GEO_SUFFIX.civ),
     color:col,cells:[seedIdx],front:[seedIdx],pop:0.01,tech:0,
     aggr:0.3+Math.random()*0.7,expand:0.55+Math.random()*0.75,cities:[],era:0,launched:0,
-    born:S.year,capital:seedIdx,wars:0,golden:0,parent:parent||null,
+    born:S.year,capital:seedIdx,wars:0,golden:0,parent:parent||null,faith:0,lang:0,
     cap:W.lex.word(2,2)};
+  const pl=parent?S.civs[parent-1]:null;
+  c.lang=newLanguage(pl?langOf(pl):null).id;
+  if(pl&&pl.faith)c.faith=pl.faith;
   S.owner[seedIdx]=id;S.pop[seedIdx]=0.3;
   S.civs.push(c);
   newRuler(c);
@@ -2078,7 +2126,7 @@ function civTick(dt){
   const nbr=W.geo.nbr,nct=W.geo.nct,hab=S.hab,owner=S.owner,pop=S.pop;
   const live=S.civs.filter(c=>c.alive);
   for(const c of live){
-    rulerTick(c,dt);
+    rulerTick(c,dt);driftLanguage(c,dt);
     // keep the frontier alive: every so often rebuild it from the cells that touch something else
     c.frontAge=(c.frontAge||0)+1;
     if(c.front.length<24||c.frontAge>12){
@@ -2098,7 +2146,7 @@ function civTick(dt){
         const oj=+ojs,other=S.civs[oj-1];if(!other||!other.alive)continue;
         if(!c.met)c.met={};
         if(!c.met[oj]){c.met[oj]=1;ev('civ',`<b>${c.title}</b> makes first contact with <b>${other.title}</b> near ${rangeName()}.`);}
-        if(!atWar(c.id,oj)&&Math.random()<0.035*c.aggr*(0.5+c.tech*0.4))declareWar(c,other);
+        if(!atWar(c.id,oj)&&Math.random()<0.035*c.aggr*(0.5+c.tech*0.4)*faithFriction(c,other))declareWar(c,other);
       }
     }
     // territorial expansion
@@ -2170,7 +2218,9 @@ function civTick(dt){
         const idx=c.cells[(Math.random()*n)|0];
         const nc=spawnCiv(idx,c.id);
         if(nc){nc.tech=c.tech*0.85;
-          ev('civ',`Schism \u2014 <b>${nc.title}</b> secedes from <b>${c.title}</b>.`);}}
+          const pl=langOf(c),nl=langOf(nc);
+          ev('civ',`Schism \u2014 <b>${nc.title}</b> secedes from <b>${c.title}</b>`+
+            (pl&&nl?`; its speech is already drifting from ${pl.name} toward ${nl.name}.`:'.'));}}
       else if(roll<0.70){
         ev('civ',R([
           `<b>${c.title}</b> charts the far shore of <b>${oceanName((Math.random()*2)|0)}</b>.`,
@@ -2361,7 +2411,10 @@ function buildLegend(){
     [["#180f24","hostile"],["#b83a4d","marginal"],["#f0a02e","fertile"],["#fbf6a0","optimal"]],
     [["#296bdb","cold current"],["#33393d","neutral"],["#eb5c24","warm current"],["#101214","interior"]]
   ];
-  const set=S.layer===9?(cladeLegend().length?cladeLegend():[["#222","no life yet"]]):sets[S.layer];
+  let set;
+  if(S.layer===9)set=cladeLegend().length?cladeLegend():[["#222","no life yet"]];
+  else if(S.layer===10)set=faithLegend().length?faithLegend():[["#222","no faith yet"]];
+  else set=sets[S.layer];
   L.innerHTML=set.map(s=>`<span class="sw"><i style="background:${s[0]}"></i>${s[1]}</span>`).join('');
 }
 
@@ -2419,6 +2472,7 @@ function renderRegistry(){
       '<div><div class="nn">'+c.title+'</div>'+
       '<div class="ne">'+ERAS[c.era]+' \u00b7 '+c.cities.length+' cities'+(c.wars?' \u00b7 '+c.wars+' wars':'')+'</div>'+
       (c.ruler?'<div class="ne" style="color:#9AA2B2;text-transform:none;letter-spacing:.02em">'+rulerName(c)+', '+Math.round(S.year-c.ruler.since)+' yr</div>':'')+
+      '<div class="ne">'+langName(c)+(faithById(c.faith)?' \u00b7 '+faithById(c.faith).name.replace(/^The /,''):'')+'</div>'+
       '<div class="nb"><i style="background:'+hex+';width:'+(clamp(terr,0,1)*100).toFixed(1)+'%"></i></div></div>'+
       '<div class="nv">'+(terr*100).toFixed(1)+'%<br>'+Math.max(1,Math.round(c.pop*240))+'M</div></div>';
   }).join('');
@@ -2487,6 +2541,8 @@ function drawMap(){
         if(S.layer===6&&S.owner&&S.owner[i]){
           const cc=U.uNations.value[S.owner[i]-1];
           col=[cc.r*(S.border[i]?1.25:0.85),cc.g*(S.border[i]?1.25:0.85),cc.b*(S.border[i]?1.25:0.85)];
+        }else if(S.layer===10&&S.faith&&S.faith[i]&&S.faiths[S.faith[i]-1]){
+          const fc=S.faiths[S.faith[i]-1].color;col=[fc.r,fc.g,fc.b];
         }else{
           const bid=biomeId(T,rain[i],elev[i],sea,0);
           col=BIOMES[bid].c.slice();
@@ -2510,6 +2566,7 @@ function drawMap(){
   ctx.stroke();
   ctx.strokeStyle='rgba(232,163,61,.45)';ctx.beginPath();
   ctx.moveTo(0,Hp/2);ctx.lineTo(Wp,Hp/2);ctx.stroke();
+  try{W.mapSnap=ctx.getImageData(0,0,Wp,Hp);}catch(err){W.mapSnap=null;}
 }
 </script>
 <script>
@@ -2538,8 +2595,8 @@ function refreshTerrain(){
 }
 
 /* ---------- interventions ---------- */
-function brushCells(ci,cb){
-  const pos=W.geo.pos,V=W.V,ang=S.brush*Math.PI;
+function brushCells(ci,cb,angRad){
+  const pos=W.geo.pos,V=W.V,ang=angRad||(S.brush*Math.PI);
   const cx=pos[ci*3],cy=pos[ci*3+1],cz=pos[ci*3+2],ca=Math.cos(ang);
   for(let i=0;i<V;i++){
     const d=pos[i*3]*cx+pos[i*3+1]*cy+pos[i*3+2]*cz;
@@ -2621,6 +2678,7 @@ function scanAt(i){
     el('k-plate').textContent="no lithosphere";
     el('k-flow').textContent=fmt(0.9+Math.abs(band)*2.2,1)+" bar cloud deck";
     el('k-civ').textContent=p.colony?"colonised":"uninhabitable";
+    el('k-faith').textContent='\u2014';el('k-lang').textContent='\u2014';
     el('k-hab').style.width="0%";
     return;
   }
@@ -2638,6 +2696,9 @@ function scanAt(i){
   el('k-flow').textContent=W.flow[i]>1?Math.round(W.flow[i]).toLocaleString()+' cells':'divide';
   const o=S.owner?S.owner[i]:0;
   el('k-civ').textContent=o?S.civs[o-1].title:'unclaimed';
+  const ff=S.faith?faithById(S.faith[i]):null;
+  el('k-faith').textContent=ff?ff.name:'\u2014';
+  el('k-lang').textContent=o?langName(S.civs[o-1]):'\u2014';
   el('k-hab').style.width=(S.hab?S.hab[i]*100:0)+'%';
   el('k-hab').style.background=S.hab&&S.hab[i]>0.55?'var(--amber)':'var(--teal)';
 }
@@ -2914,6 +2975,7 @@ const TIPS={
  '#btn-codex':['Codex','A written record of the whole system as it stands: star, every body, the polities of this world and its chronicle. Copy it as text to keep or share. C toggles.'],
  '#btn-tour':['Tour','Sit back. The camera flies itself: the world, a city at night, a frontier, the highlands, orbit, a moon, the system, then the next planet. Starts by itself after ninety idle seconds. Any key stops it. T toggles.'],
  '#btn-cine':['Cinema','When something big happens - an impact, a founding, a launch, a war, an eclipse, a comet - time drops to quarter speed and the camera goes to it for a few seconds with a title card and its own sound, then comes back. Turn this off to keep the camera yours.'],
+ '[data-layer="10"]':['Faiths','Which creed holds each stretch of ground. Faiths are proclaimed by a polity, spread through its people and along the trade lanes, and split into sects that hate each other more than they hate strangers. F selects it.'],
  '[data-layer="9"]':['Life','Which lineage holds each niche: sea, shore, forest, grassland, desert, ice, high country and air. Colours change as clades radiate and die out. 0 selects it.'],
  '#btn-sound':['Sound','A quiet drone keyed to the world you are looking at - thinner and higher on cold worlds, deep on gas giants - with a chime for each chronicle entry. Off by default. M toggles.'],
  '#map':['Map','Equirectangular projection of the current channel. Click anywhere to swing the camera there.'],
@@ -2961,6 +3023,7 @@ addEventListener('keydown',e=>{
   else if(k==='h')document.body.classList.toggle('hidehud');
   else if(k>='1'&&k<='9'){const b=el('layers').querySelector(`button[data-layer="${+k-1}"]`);if(b)b.click();}
   else if(k==='0'){const b=el('layers').querySelector('button[data-layer="9"]');if(b)b.click();}
+  else if(k==='f'){const b=el('layers').querySelector('button[data-layer="10"]');if(b)b.click();}
   else if(k==='t')el('btn-tour').click();
   else if(k==='r')el('btn-roll').click();
   else if(k==='g')el('toggles').querySelector('button[data-tg="grid"]').click();
@@ -3340,6 +3403,7 @@ function applyFocusLook(){
   }
   S.hasRing=!!p.ring;
   ringMesh.visible=!!p.ring&&!!S.toggles.rings;
+  refreshStormUniforms();
   U.uThick.value=S.gas?1.7:1.0;
   el('toolnote').hidden=!S.gas;
   el('campaigns').style.opacity=S.gas?0.4:1;
@@ -3575,6 +3639,10 @@ function abstractTick(p,dy){
       if(era>=8)addSatellites(p,c,2);
     }
     if(c.share>(c.cities+1)*0.06&&c.cities<8)c.cities++;
+    if(!c.faithName&&c.era>=2&&Math.random()<0.0012*dy){
+      c.faithName='The '+SYS.lex.word(1,2)+' '+R(['Way','Rite','Covenant','Communion','Observance']);
+      sim.chron.push({y:S.year,k:'civ',h:'<b>'+c.faithName+'</b> is proclaimed among the '+c.title+'.'});
+    }
     if(Math.random()<0.00012*dy&&S.year-c.born>300){
       c.alive=false;
       if(live.length===1)evBg(p,'cat','<b>'+c.title+'</b> collapses; <b>'+p.name+'</b> falls silent.');
@@ -3636,13 +3704,15 @@ function syncAbstractFromGrid(p){
   const landCells=Math.max(1,W.V*Math.max(0.01,S.landFrac||0.01));
   p.sim.bio=S.bio;p.sim.stage=stageIdx;
   p.sim.civs=S.civs.map(c=>({id:c.id,name:c.name,title:c.title,cap:c.cap,tech:c.tech,era:c.era,pop:c.pop,
-    share:c.cells.length/landCells,alive:c.alive,born:c.born,cities:(c.cities||[]).length,launched:c.launched}));
+    share:c.cells.length/landCells,alive:c.alive,born:c.born,cities:(c.cities||[]).length,launched:c.launched,
+    faithName:(faithById(c.faith)||{}).name}));
 }
 function snapshotFocused(){
   const p=curPlanet();if(!p||!W.V||!planetMesh)return;
   const full={W:{},owner:S.owner,pop:S.pop,border:S.border,vvar:S.vvar,civs:S.civs,bio:S.bio,stage:stageIdx,
     impactWinter:S.impactWinter,iceState:S.iceState,lastSeaEv:S.lastSeaEv,deadNoted:!!S.deadNoted,
     hist:S.hist,gas:S.gas,arch:S.arch,atmo:S.atmo,driftT:S.driftT,sliders:{},wars:S.wars,
+    faith:S.faith,faiths:S.faiths,langs:S.langs,
     nations:U.uNations.value.map(c=>c.clone()),moonSeed:S.moonSeed,atmoCol:U.uAtmoCol.value.clone()};
   for(const k of WKEYS)full.W[k]=W[k];
   for(const id of SLIDER_IDS)full.sliders[id]=el(id).value;
@@ -3666,13 +3736,15 @@ function restoreFocused(p){
   S.owner=f.owner;S.pop=f.pop;S.border=f.border;S.vvar=f.vvar;
   S.civs=f.civs;S.bio=f.bio;stageIdx=f.stage;S.impactWinter=f.impactWinter;S.iceState=f.iceState;
   S.lastSeaEv=f.lastSeaEv;S.deadNoted=f.deadNoted;S.hist=f.hist;S.wars=f.wars||[];S.replay=null;
+  S.faith=f.faith||S.faith;S.faiths=f.faiths||[];S.langs=f.langs||[];S.faithCells=[];
+  S.faiths.forEach((x,i)=>{if(i<12)U.uFaith.value[i].copy(x.color);});
   f.nations.forEach((c,i)=>U.uNations.value[i].copy(c));
   refreshPack2();
   S.moonSeed=f.moonSeed;buildMoons(mulberry(S.moonSeed));
   U.uForm.value=1;
   applyFocusLook();computeHab();syncIdentity();
   buildLabels();addCityLabels();buildSatLabels();drawMap();buildLegend();
-  rebuildChron(p);buildRoutes();refreshCladeUniforms();
+  rebuildChron(p);buildRoutes();refreshCladeUniforms();refreshFaith();refreshStormUniforms();
   S.lastGen=0;
 }
 function backfillStages(p){
@@ -3692,7 +3764,9 @@ function backfillStages(p){
   rebuildChron(p);
 }
 function resetGridSim(p){
-  S.wars=[];S.replay=null;
+  S.wars=[];S.replay=null;S.faiths=[];S.langs=[];S.faithCells=[];
+  if(S.faith)S.faith.fill(0);
+  if(p&&p.sim)p.sim.storms=[];
   S.civs=[];S.bio=p?p.sim.bio:0;stageIdx=p?p.sim.stage:0;
   S.impactWinter=p?p.sim.impactWinter:0;S.iceState=p?p.sim.iceState:"";S.lastSeaEv=0;S.deadNoted=p?p.sim.deadNoted:false;
   S.hist=p?p.sim.hist:[];
@@ -3722,9 +3796,14 @@ function instantiateAbstract(p){
     c.name=ac.name;c.title=ac.title;c.cap=ac.cap;c.tech=ac.tech;c.era=ac.era;c.born=ac.born;c.launched=ac.launched;
     growTerritory(c,Math.max(6,Math.round(ac.share*landCells)));
     for(let k=0;k<ac.cities;k++)foundCity(c);
+    if(ac.faithName){
+      let f=S.faiths.find(x=>x.name===ac.faithName);
+      if(!f){f=foundFaith(c,null);if(f)f.name=ac.faithName;}
+      if(f){seedFaith(f,c.capital,Math.max(20,Math.round(c.cells.length*0.5)));c.faith=f.id;}
+    }
     ac.id=c.id;
   }
-  if(S.civs.length){recomputeBorders();refreshPack2();addCityLabels();}
+  if(S.civs.length){recomputeBorders();refreshPack2();addCityLabels();refreshFaith();}
 }
 
 /* ---------- the rest of the system, seen from the surface ---------- */
@@ -3971,7 +4050,11 @@ function declareWar(c,o){
   if(c.cells.length<40||o.cells.length<40)return;
   S.wars.push({a:c.id,b:o.id,start:S.year,weary:0,alive:true,a0:c.cells.length,b0:o.cells.length});
   c.wars++;o.wars++;if(c.ruler)c.ruler.wars++;
-  ev('cat',`<b>War.</b> ${rulerName(c)} of ${c.title} marches on ${o.title} over ${R(['the marches of','the river towns of','the passes of','the coast facing'])} ${placeOf(o.capital)}.`);
+  const holy=c.faith&&o.faith&&c.faith!==o.faith;
+  const fa=faithById(c.faith),fb=faithById(o.faith);
+  ev('cat',holy&&fa&&fb
+    ? `<b>Holy war.</b> ${rulerName(c)} of ${c.title} takes up ${fa.name.replace(/^The /,'the ')} against ${o.title} and its ${fb.name.replace(/^The /,'')}.`
+    : `<b>War.</b> ${rulerName(c)} of ${c.title} marches on ${o.title} over ${R(['the marches of','the river towns of','the passes of','the coast facing'])} ${placeOf(o.capital)}.`);
   let fc=c.capital;for(const i of c.cells){let hit=false;for(let k=0;k<W.geo.nct[i];k++)if(S.owner[W.geo.nbr[i*6+k]]===o.id){hit=true;break;}if(hit){fc=i;break;}}
   momentFront(fc,c.title+' against '+o.title,rulerName(c)+' opens the war');
 }
@@ -4432,12 +4515,26 @@ function buildCodex(){
     push(`<p class="hnote">${esc(el('pclass').textContent)}. ${fmt(S.landFrac*100,0)}% land, ${fmt(S.iceFrac*100,0)}% ice, mean ${fmt(S.gmt,1)} \u00b0C, biosphere ${S.gas?'none':Math.round(S.bio*100)+'%'}. Largest landmass <b>${W.continents&&W.continents[0]?esc(W.continents[0].name):'\u2014'}</b>; largest sea <b>${W.oceans&&W.oceans[0]?esc(W.oceans[0].name):'\u2014'}</b>.${moons.length?' Moons: '+moons.map(m=>esc(m.name)+(m.base?' (base)':'')).join(', ')+'.':''}</p>`,
          `${el('pclass').textContent}. ${fmt(S.landFrac*100,0)}% land, mean ${fmt(S.gmt,1)} C, biosphere ${S.gas?'none':Math.round(S.bio*100)+'%'}.${moons.length?' Moons: '+moons.map(m=>m.name).join(', ')+'.':''}`);
     if(live.length){
-      push('<table class="ctab"><tr><th>Polity</th><th>Ruler</th><th>Era</th><th>Land</th><th>People</th><th>Cities</th><th>Wars</th></tr>',`\n### Polities`);
+      push('<table class="ctab"><tr><th>Polity</th><th>Ruler</th><th>Tongue</th><th>Faith</th><th>Era</th><th>Land</th><th>People</th></tr>',`\n### Polities`);
       for(const c of live){
-        push(`<tr><td><i style="background:#${c.color.getHexString()}"></i>${esc(c.title)}</td><td>${esc(rulerName(c))}</td><td>${ERAS[c.era]}</td><td>${(c.cells.length/landCells*100).toFixed(1)}%</td><td>${Math.max(1,Math.round(c.pop*240))}M</td><td>${(c.cities||[]).length}</td><td>${c.wars}</td></tr>`,
-             `- ${c.title} (${rulerName(c)}): ${ERAS[c.era]}, ${(c.cells.length/landCells*100).toFixed(1)}% of land, ${Math.max(1,Math.round(c.pop*240))}M, ${(c.cities||[]).length} cities`);
+        const fz=faithById(c.faith);
+        push(`<tr><td><i style="background:#${c.color.getHexString()}"></i>${esc(c.title)}</td><td>${esc(rulerName(c))}</td><td>${esc(langName(c))}</td><td>${fz?esc(fz.name):'\u2014'}</td><td>${ERAS[c.era]}</td><td>${(c.cells.length/landCells*100).toFixed(1)}%</td><td>${Math.max(1,Math.round(c.pop*240))}M</td></tr>`,
+             `- ${c.title} (${rulerName(c)}, ${langName(c)}${fz?', '+fz.name:''}): ${ERAS[c.era]}, ${(c.cells.length/landCells*100).toFixed(1)}% of land, ${Math.max(1,Math.round(c.pop*240))}M`);
       }
       push('</table>');
+      const fl=S.faiths.filter(f=>f.cells>0);
+      if(fl.length){
+        push(`<h3>Faiths</h3><table class="ctab"><tr><th>Faith</th><th>Proclaimed</th><th>From</th><th>Share of the land</th></tr>`,`\n### Faiths`);
+        const tot=Math.max(1,fl.reduce((a,f)=>a+f.cells,0));
+        for(const f of fl.sort((a,b)=>b.cells-a.cells)){
+          const par=faithById(f.parent);
+          push(`<tr><td><i style="background:#${f.color.getHexString()}"></i>${esc(f.name)}</td><td>YR ${Math.round(f.born).toLocaleString()}</td><td>${par?esc(par.name):'\u2014'}</td><td>${(f.cells/tot*100).toFixed(0)}%</td></tr>`,
+               `- ${f.name}: proclaimed YR ${Math.round(f.born)}${par?', from '+par.name:''}, ${(f.cells/tot*100).toFixed(0)}% of the faithful`);
+        }
+        push('</table>');
+      }
+      const st=(f.sim.storms||[]).filter(x=>x.name);
+      if(st.length)push(`<p class="hnote">Storms at sea: ${st.map(x=>esc(x.name)).join(', ')}.</p>`,`\nStorms: ${st.map(x=>x.name).join(', ')}`);
     }
     const cl=(f.sim.clades||[]);
     if(cl.length){
@@ -4517,6 +4614,8 @@ function sfx(kind){
     case 'eclipse':tone('sine',220,0,4.5,0.11,0,2.2);tone('sine',330,0,4.5,0.08,0.4,2.4);tone('triangle',110,0,5,0.07,0,3);break;
     case 'found':[392,494,587,784].forEach((f,k)=>tone('sine',f,0,0.9,0.12,k*0.22));tone('triangle',196,0,2.2,0.06,0,0.3);break;
     case 'peace':[262,330,392,523].forEach(f=>tone('sine',f,0,2.6,0.07,0,0.8));break;
+    case 'storm':{noise(7,90,900,0.34,'bandpass');noise(7,1800,300,0.16,'highpass');tone('sine',44,30,7,0.15,0,1.4);break;}
+    case 'faith':{[196,262,311,392,523].forEach((f,k)=>tone('sine',f,0,4.2,0.055,k*0.16,1.1));tone('triangle',98,0,4.6,0.05,0,1.6);break;}
     case 'comet':{const o=ctx.createOscillator();o.type='sine';o.frequency.value=1180;const l=ctx.createOscillator();l.frequency.value=5.5;const lg=ctx.createGain();lg.gain.value=18;l.connect(lg);lg.connect(o.frequency);
       const g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.07,t+1.2);g.gain.exponentialRampToValueAtTime(0.001,t+3.5);o.connect(g);g.connect(out);o.start(t);l.start(t);o.stop(t+3.6);l.stop(t+3.6);
       noise(3,3000,8000,0.05,'highpass');break;}
@@ -4768,6 +4867,13 @@ function momentFront(i,title,sub){
 function momentGeneric(kicker,title,sub,cell,dist,sfxName){
   pushMoment({pri:1,dur:8,cell,dist:dist||2.6,rate:1.3,sfx:sfxName,kicker:kicker+' \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
 }
+function momentStorm(i,name,sub){
+  pushMoment({pri:3,dur:11,cell:i,dist:2.05,rate:1.5,sfx:'storm',
+    kicker:'LANDFALL \u00b7 YR '+Math.round(S.year).toLocaleString(),title:name,sub,
+    fx:()=>{CINE.cloudWas=cloudMesh.visible;cloudMesh.visible=true;},
+    tick:()=>{U.uCloudFade.value=Math.max(U.uCloudFade.value,0.92);},
+    after:()=>{if(CINE.cloudWas!==undefined)cloudMesh.visible=CINE.cloudWas;}});
+}
 function momentSky(kicker,title,sub,dirWorld,sfxName,fx,after){
   pushMoment({pri:2,dur:10,skyDir:dirWorld.clone(),dist:6.5,rate:1.1,sfx:sfxName,fx,after,kicker:kicker+' \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
 }
@@ -4888,7 +4994,12 @@ function rulerTick(c,dt){
     const ep=rulerEpithet(r,c);
     const heir=newRuler(c);
     const crisis=Math.random()<0.14&&c.cells.length>300;
-    ev('civ',`<b>${rulerTitle(c)} ${r.name} ${ep}</b> of ${c.title} dies after ${Math.round(S.year-r.since)} years. `+
+    const reign=S.year-r.since;
+    // only the reigns that mattered reach the chronicle; the rest pass in silence
+    const rateOk=S.year-(S.lastSucc||-1e9)>240;
+    const notable=crisis||r.plague||((r.wars>=2||r.golden>=1||reign>72)&&rateOk);
+    if(notable)S.lastSucc=S.year;
+    if(notable)ev('civ',`<b>${rulerTitle(c)} ${r.name} ${ep}</b> of ${c.title} dies after ${Math.round(reign)} years. `+
       (crisis?`The succession is disputed; <b>${heir.name}</b> takes the seat by force.`:`<b>${heir.name}</b> succeeds.`));
     if(crisis){c.aggr=Math.min(1.2,c.aggr+0.15);for(let s=0;s<c.cells.length;s++)S.pop[c.cells[s]]*=0.85;}
   }
@@ -4986,6 +5097,284 @@ function cladeLegend(){
 <script>
 "use strict";
 /* ============================================================================
+   STAGE F - weather that moves, faiths that spread, tongues that drift
+   ========================================================================== */
+
+/* ---------- storms ---------- */
+const MAXSTORM=6;
+const _sv2=new THREE.Vector3(),_sv3=new THREE.Vector3(),_sv4=new THREE.Vector3();
+function stormList(){const p=curPlanet();if(!p||!p.sim)return null;if(!p.sim.storms)p.sim.storms=[];return p.sim.storms;}
+function tempAtCell(i){
+  const P=curClimate(),sea=U.uSea.value;
+  return tempAt(W.geo.pos[i*3+1],W.elev[i]-sea,P,0)+(W.curr?W.curr[i]:0);
+}
+function spawnStorm(){
+  const L=stormList();if(!L||L.length>=MAXSTORM||!W.wind)return;
+  const sea=U.uSea.value,p=W.geo.pos;
+  for(let t=0;t<400;t++){
+    const i=(Math.random()*W.V)|0;
+    if(W.elev[i]>=sea)continue;
+    const y=p[i*3+1];
+    const lat=Math.abs(Math.asin(clamp(y,-1,1))*180/Math.PI);
+    if(lat<6||lat>32)continue;
+    if(tempAtCell(i)<24)continue;
+    L.push({v:new THREE.Vector3(p[i*3],y,p[i*3+2]).normalize(),
+      inten:0.10,rad:0.05,hand:y>=0?1:-1,phase:Math.random()*6.28,
+      max:0.3+Math.random()*Math.random()*0.75,
+      age:0,name:null,peak:0,over:'sea',born:S.year});
+    return;
+  }
+}
+function stormLandfall(s,i){
+  const nm=s.name||(s.name=W.lex.word(1,2));
+  const own=S.owner?S.owner[i]:0;
+  const civ=own?S.civs[own-1]:null;
+  let hit=0;
+  brushCells(i,(j,t)=>{
+    if(W.elev[j]<U.uSea.value)return;
+    if(S.pop[j]>0.02){S.pop[j]*=1-0.42*(1-t)*s.inten;hit++;}
+  },s.rad*1.7);
+  const force=s.inten>0.82?'A great cyclone':(s.inten>0.6?'A severe cyclone':'A cyclone');
+  ev('cat',`${force}, <b>${nm}</b>, comes ashore on ${placeOf(i)}`+
+    (civ?`, across the coast of <b>${civ.title}</b>; ${R(['the harvest is lost','the harbours are wrecked','the low towns flood','thousands are displaced'])}.`
+        :`. Nothing lives there to notice.`));
+  if(hit)refreshPack2();
+  momentStorm(i,nm,(civ?civ.title+' \u00b7 ':'')+placeOf(i));
+}
+function stormTick(dts){
+  const L=stormList();
+  if(!L||S.gas||!W.wind){clearStormUniforms();return;}
+  const sea=U.uSea.value;
+  S.stormSpawn=(S.stormSpawn||0)+dts;
+  if(S.stormSpawn>5.0){S.stormSpawn=0;if(Math.random()<0.5&&(stormList()||[]).length<4)spawnStorm();}
+  for(let k=L.length-1;k>=0;k--){
+    const s=L[k];
+    s.age+=dts;
+    const i=nearestVertex(s.v.x,s.v.y,s.v.z);
+    const land=W.elev[i]>=sea;
+    const T=tempAtCell(i);
+    _sv2.set(W.wind[i*3],W.wind[i*3+1],W.wind[i*3+2]);
+    _sv3.set(0,s.hand,0);
+    _sv2.addScaledVector(_sv3,0.42);
+    _sv2.addScaledVector(s.v,-_sv2.dot(s.v));
+    if(_sv2.lengthSq()<1e-8)_sv2.set(1,0,0);
+    _sv2.normalize();
+    s.v.addScaledVector(_sv2,0.06*dts).normalize();
+    const absLat=Math.abs(Math.asin(clamp(s.v.y,-1,1))*180/Math.PI);
+    if(!land&&T>23&&absLat<38)s.inten=Math.min(s.max,s.inten+dts*0.085*clamp((T-22)/9,0,1));
+    else s.inten-=dts*(land?0.17:(absLat>38?0.11:0.055));
+    s.rad=0.042+s.inten*0.055;
+    s.peak=Math.max(s.peak,s.inten);
+    if(!s.name&&s.inten>0.52){
+      s.name=W.lex.word(1,2);
+      ev('geo',`A cyclone tightens over <b>${oceanName(0)}</b>; it is named <b>${s.name}</b>.`);
+    }
+    if(land&&s.over==='sea'&&s.inten>0.4)stormLandfall(s,i);
+    s.over=land?'land':'sea';
+    if(s.inten<=0.02||s.age>75){
+      if(s.name&&s.peak>0.6)ev('geo',`<b>${s.name}</b> breaks up and is struck from the register.`);
+      L.splice(k,1);
+    }
+  }
+  refreshStormUniforms();
+}
+function clearStormUniforms(){for(let i=0;i<MAXSTORM;i++)U.uStorm.value[i].set(0,1,0,0);}
+function refreshStormUniforms(){
+  const L=stormList();
+  for(let i=0;i<MAXSTORM;i++){
+    const s=L&&L[i];
+    if(!s||S.gas){U.uStorm.value[i].set(0,1,0,0);continue;}
+    U.uStorm.value[i].set(s.v.x,s.v.y,s.v.z,clamp(s.inten,0,1));
+    U.uStorm2.value[i].set(Math.cos(s.rad),s.hand,s.rad,s.phase);
+  }
+}
+function drawStormsOnMap(){
+  const c=el('map');if(!c||!W.mapSnap||S.gas)return;
+  const L=stormList();
+  const ctx=c.getContext('2d');
+  ctx.putImageData(W.mapSnap,0,0);
+  if(!L||!L.length)return;
+  for(const s of L){
+    const x=((Math.atan2(s.v.z,s.v.x)+Math.PI)/(2*Math.PI))*c.width;
+    const y=(0.5-Math.asin(clamp(s.v.y,-1,1))/Math.PI)*c.height;
+    const r=Math.max(3.5,s.rad*c.height/Math.PI*2.2);
+    ctx.strokeStyle='rgba(238,244,255,'+(0.3+0.55*s.inten).toFixed(2)+')';
+    ctx.lineWidth=1.1;
+    for(let arm=0;arm<2;arm++){
+      ctx.beginPath();
+      for(let q=0;q<=30;q++){
+        const t=q/30;
+        const rr=r*(0.14+t*0.92);
+        const a=t*3.1*s.hand+s.phase+arm*Math.PI;
+        const px=x+Math.cos(a)*rr,py=y+Math.sin(a)*rr*0.92;
+        q?ctx.lineTo(px,py):ctx.moveTo(px,py);
+      }
+      ctx.stroke();
+    }
+    if(s.name){
+      ctx.fillStyle='rgba(238,244,255,.75)';ctx.font='7px monospace';
+      ctx.fillText(s.name.toUpperCase(),x+r+3,y+2);
+    }
+  }
+}
+
+/* ---------- faiths ---------- */
+const FAITH_HUES=[0.09,0.55,0.78,0.33,0.02,0.62,0.15,0.88,0.45,0.70,0.26,0.50];
+const FAITH_FORMS=[
+  n=>'The '+n+' Way', n=>'The Covenant of '+n, n=>'The '+n+' Rite',
+  n=>'The Mysteries of '+n, n=>'The '+n+' Communion', n=>'The Observance of '+n,
+  n=>'The '+n+' Orthodoxy', n=>'The Testament of '+n
+];
+function faithById(id){return id?S.faiths[id-1]:null;}
+function foundFaith(c,parent){
+  if(!S.faith||S.faiths.length>=12)return null;
+  const id=S.faiths.length+1;
+  const root=W.lex.word(1,2);
+  const name=parent?(R(['Reformed','Elder','Second','Free','True','Ascetic'])+' '+parent.name.replace(/^The /,''))
+                   :R(FAITH_FORMS)(root);
+  const col=new THREE.Color().setHSL(FAITH_HUES[(id-1)%12],parent?0.42:0.58,parent?0.64:0.56);
+  U.uFaith.value[id-1].copy(col);
+  const f={id,name,color:col,born:S.year,founder:c?c.id:0,parent:parent?parent.id:0,cells:0,root};
+  S.faiths.push(f);
+  return f;
+}
+function seedFaith(f,i,count){
+  const nbr=W.geo.nbr,nct=W.geo.nct,q=[i];let qi=0;
+  if(!S.faith[i])S.faithCells.push(i);
+  S.faith[i]=f.id;
+  while(qi<q.length&&qi<count){
+    const a=q[qi++];
+    for(let k=0;k<nct[a];k++){
+      const b=nbr[a*6+k];
+      if(W.elev[b]<U.uSea.value||S.faith[b]===f.id)continue;
+      if(!S.faith[b])S.faithCells.push(b);
+      S.faith[b]=f.id;q.push(b);
+      if(q.length>=count)break;
+    }
+  }
+}
+function civFaith(c){
+  if(!S.faith||!c.cells.length)return null;
+  const tally={};let best=0,bid=0;
+  const n=Math.min(c.cells.length,120);
+  for(let t=0;t<n;t++){
+    const i=c.cells[(Math.random()*c.cells.length)|0];
+    const f=S.faith[i];if(!f)continue;
+    tally[f]=(tally[f]||0)+1;
+    if(tally[f]>best){best=tally[f];bid=f;}
+  }
+  return faithById(bid);
+}
+function faithFriction(a,b){
+  const fa=a.faith,fb=b.faith;
+  if(!fa||!fb)return 1;
+  if(fa===fb)return 0.4;
+  const A=faithById(fa),B=faithById(fb);
+  if(A&&B&&(A.parent===B.id||B.parent===A.id||(A.parent&&A.parent===B.parent)))return 2.4;
+  return 1.8;
+}
+function faithTick(dy){
+  if(!S.faith||S.gas)return;
+  const live=S.civs.filter(c=>c.alive);
+  // a faith is proclaimed
+  if(S.faiths.length<12&&live.length){
+    for(const c of live){
+      if(c.era<2||c.faith||Math.random()>0.0016*dy)continue;
+      const f=foundFaith(c,null);
+      if(!f)break;
+      seedFaith(f,c.capital,Math.max(30,Math.round(c.cells.length*0.35)));
+      c.faith=f.id;
+      ev('civ',`<b>${f.name}</b> is proclaimed at <b>${c.cap}</b>, in the ${ERAS[c.era]} age of ${c.title}.`);
+      momentGeneric('FAITH',f.name,'proclaimed at '+c.cap,c.capital,2.0,'faith');
+      break;
+    }
+  }
+  if(!S.faiths.length)return;
+  const nbr=W.geo.nbr,nct=W.geo.nct,faith=S.faith,owner=S.owner,pop=S.pop,sea=U.uSea.value;
+  const FC=S.faithCells;
+  const tries=clamp(Math.round(dy*26),60,1200);
+  for(let t=0;t<tries&&FC.length;t++){
+    const i=FC[(Math.random()*FC.length)|0];
+    const fi=faith[i];if(!fi)continue;
+    const j=nbr[i*6+((Math.random()*nct[i])|0)];
+    if(W.elev[j]<sea||faith[j]===fi)continue;
+    const same=owner[j]&&owner[j]===owner[i];
+    let pr=0.62*(0.3+pop[i])*(same?1.8:0.5);
+    if(faith[j])pr*=0.22;
+    if(Math.random()<pr){if(!faith[j])FC.push(j);faith[j]=fi;}
+  }
+  // along the trade lanes, a faith crosses to a neighbour at peace
+  if(Math.random()<0.004*dy&&live.length>1){
+    const a=live[(Math.random()*live.length)|0];
+    if(a.faith&&a.met){
+      const ids=Object.keys(a.met);
+      const oj=+ids[(Math.random()*ids.length)|0];
+      const b=S.civs[oj-1];
+      if(b&&b.alive&&!atWar(a.id,b.id)&&b.faith!==a.faith&&S.year-(b.lastMission||-1e9)>900){
+        b.lastMission=S.year;
+        const f=faithById(a.faith);
+        seedFaith(f,b.capital,Math.max(12,Math.round(b.cells.length*0.12)));
+        ev('civ',`Missionaries of <b>${f.name.replace(/^The /,'the ')}</b> reach <b>${b.cap}</b>; ${b.title} hears them out.`);
+      }
+    }
+  }
+  // schism
+  if(Math.random()<0.0011*dy&&S.faiths.length<12){
+    const big=S.faiths.filter(f=>f.cells>260);
+    if(big.length){
+      const parent=big[(Math.random()*big.length)|0];
+      let seed=-1;
+      for(let t=0;t<500;t++){const i=(Math.random()*W.V)|0;if(faith[i]===parent.id){seed=i;break;}}
+      if(seed>=0){
+        const f=foundFaith(null,parent);
+        if(f){
+          seedFaith(f,seed,Math.max(40,Math.round(parent.cells*0.3)));
+          ev('cat',`<b>Schism.</b> ${f.name} breaks from ${parent.name} over ${R(['the nature of the maker','the calendar of feasts','the succession of teachers','the reading of the older text','whether the dead wake'])}.`);
+          momentGeneric('SCHISM',f.name,'breaks from '+parent.name,seed,2.3,'faith');
+        }
+      }
+    }
+  }
+}
+function refreshFaith(){
+  if(!S.faith||!planetMesh)return;
+  const a=planetMesh.geometry.getAttribute('aFaith');
+  if(!a)return;
+  a.array.set(S.faith);a.needsUpdate=true;
+  for(const f of S.faiths)f.cells=0;
+  S.faithCells.length=0;
+  for(let i=0;i<W.V;i++){const f=S.faith[i];if(f){S.faithCells.push(i);if(S.faiths[f-1])S.faiths[f-1].cells++;}}
+  for(const c of S.civs)if(c.alive){const f=civFaith(c);c.faith=f?f.id:c.faith;}
+}
+function faithLegend(){
+  return S.faiths.filter(f=>f.cells>0).sort((a,b)=>b.cells-a.cells).slice(0,6)
+    .map(f=>['#'+f.color.getHexString(),f.name.replace(/^The /,'')]);
+}
+
+/* ---------- tongues ---------- */
+function newLanguage(parent){
+  const id=S.langs.length+1;
+  const name=W.lex.word(1,2)+R(['ic','an','ish','ar','en','ai','os']);
+  const l={id,name,parent:parent?parent.id:0,family:parent?parent.family:name,born:S.year};
+  S.langs.push(l);
+  return l;
+}
+function langOf(c){return c&&c.lang?S.langs[c.lang-1]:null;}
+function langName(c){const l=langOf(c);return l?l.name:'\u2014';}
+function driftLanguage(c,dy){
+  const l=langOf(c);if(!l)return;
+  l.drift=(l.drift||0)+dy;
+  if(l.drift>4200&&Math.random()<0.25){
+    l.drift=0;
+    const old=l.name;
+    l.name=W.lex.word(1,2)+R(['ic','an','ish','ar','en']);
+    ev('civ',`The tongue of <b>${c.title}</b> has drifted past its written record; scholars now call it <b>${l.name}</b>, not ${old}.`);
+  }
+}
+</script>
+<script>
+"use strict";
+/* ============================================================================
    MAIN LOOP
    ========================================================================== */
 const _sunW=new THREE.Vector3(),_tmp=new THREE.Vector3(),_camL=new THREE.Vector3();
@@ -4999,6 +5388,7 @@ function simulate(dt){
   globe.rotation.y+=dSpin;
   if(!S.spin&&S.mode==='world'){cam.theta+=dSpin;cam.tTheta+=dSpin;}
   S.sysT+=dt*Math.min(sp,4);
+  stormTick(dt*Math.min(sp,4));
   const dy=dt*sp*2.6;
   S.year+=dy;
   if(S.impactWinter<0)S.impactWinter=Math.min(0,S.impactWinter+dt*sp*0.30);
@@ -5072,6 +5462,7 @@ function simulate(dt){
     S.routeAcc=(S.routeAcc||0)+civAcc;
     if(S.routeAcc>2.5){S.routeAcc=0;buildRoutes();}
     const dyAbs=civAcc*sp*2.6;
+    faithTick(dyAbs);
     cladeTick(curPlanet(),dyAbs,true);
     for(const p of SYS.planets)if(p.idx!==SYS.focus&&p.sim){abstractTick(p,dyAbs);cladeTick(p,dyAbs,false);}
     civAcc=0;
@@ -5185,7 +5576,8 @@ function frame(){
       renderRegistry();
       syncIdentity();
       soundTick();
-      refreshCladeUniforms();if(S.layer===9)buildLegend();
+      refreshCladeUniforms();refreshFaith();drawStormsOnMap();
+      if(S.layer===9||S.layer===10)buildLegend();
       syncAbstractFromGrid(curPlanet());
       S.plAcc=(S.plAcc||0)+0.5;
       if(S.plAcc>=3){S.plAcc=0;buildPlanetList();}
