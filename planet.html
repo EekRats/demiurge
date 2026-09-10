@@ -1504,6 +1504,9 @@ void main(){
   vec3 L=normalize(uSun);
   float ndl=dot(N,L);
   float lam=clamp(ndl,0.0,1.0);
+  float ecl=uEclipse.w*(1.0-smoothstep(uEclipseR*0.3,uEclipseR,acos(clamp(dot(dir,uEclipse.xyz),-1.0,1.0))));
+  lam*=1.0-0.94*ecl;
+  spec*=1.0-ecl;
   float night=smoothstep(0.10,-0.06,dot(dir,L));
   vec3 V=normalize(uCam-vWorld);
   vec3 H=normalize(L+V);
@@ -1514,9 +1517,8 @@ void main(){
   lit+=uAtmoCol*rim*0.42*clamp(ndl,0.0,1.0);
   // sunset scattering near terminator
   lit+=uAtmoCol*vec3(1.7,0.72,0.30)*pow(clamp(1.0-abs(dot(dir,L))*11.0,0.0,1.0),2.0)*0.16;
-  // a moon's shadow
-  float ecl=uEclipse.w*(1.0-smoothstep(uEclipseR*0.3,uEclipseR,acos(clamp(dot(dir,uEclipse.xyz),-1.0,1.0))));
-  lit*=1.0-0.88*ecl;
+  // a moon's shadow (the light itself was cut above); dim the haze too
+  lit*=1.0-0.6*ecl;
   // contested frontiers glow in every channel
   lit=mix(lit,vec3(0.95,0.18,0.10),step(1.5,vBorder)*0.6*land);
   // city lights: sparse points, brightest where the cities are
@@ -1547,7 +1549,8 @@ precision highp float;
 ${NOISE_GLSL}
 varying vec3 vDir,vWorld;
 uniform vec3 uSun,uCam,uAtmoCol;
-uniform float uTime,uCover,uTilt,uSeason,uSolar,uGreen,uQual,uCloudFade;
+uniform float uTime,uCover,uTilt,uSeason,uSolar,uGreen,uQual,uCloudFade,uEclipseR;
+uniform vec4 uEclipse;
 void main(){
   vec3 d=normalize(vDir);
   float lat=asin(clamp(d.y,-1.0,1.0));
@@ -1567,6 +1570,8 @@ void main(){
   if(a<0.004) discard;
   vec3 L=normalize(uSun);
   float ndl=clamp(dot(d,L),0.0,1.0);
+  float ecl=uEclipse.w*(1.0-smoothstep(uEclipseR*0.3,uEclipseR*1.05,acos(clamp(dot(d,uEclipse.xyz),-1.0,1.0))));
+  ndl*=1.0-0.94*ecl;
   float rim=pow(1.0-clamp(dot(normalize(uCam-vWorld),d),0.0,1.0),2.5);
   vec3 c=mix(vec3(0.55,0.58,0.66),vec3(1.0,0.99,0.97),ndl);
   c=mix(c,uAtmoCol*1.3+vec3(0.5,0.25,0.12),pow(clamp(1.0-abs(dot(d,L))*3.0,0.0,1.0),3.0)*0.6);
@@ -1651,7 +1656,7 @@ void main(){
   }
   float h=c1*0.6+craters;
   float m0=vnoise(d*30.0);
-  vec3 N=normalize(d+(vec3(vnoise(d*30.0+vec3(0.4,0.0,0.0)),vnoise(d*30.0+vec3(0.0,0.4,0.0)),vnoise(d*30.0+vec3(0.0,0.0,0.4)))-m0)*0.9);
+  vec3 N=normalize(d+(vec3(vnoise(d*30.0+vec3(0.4,0.0,0.0)),vnoise(d*30.0+vec3(0.0,0.4,0.0)),vnoise(d*30.0+vec3(0.0,0.0,0.4)))-m0)*0.32);
   float lam=clamp(dot(N,normalize(uSun)),0.0,1.0);
   vec3 c=uTint*(0.55+0.55*h);
   c*= (0.03+lam*1.25);
@@ -1727,7 +1732,7 @@ let planetMesh=null, riverMesh=null;
 
 const cloudMat=new THREE.ShaderMaterial({
   vertexShader:CLOUD_VERT,fragmentShader:CLOUD_FRAG,transparent:true,depthWrite:false,
-  uniforms:Object.assign({uSun:U.uSun,uCam:U.uCam},pick("uAtmoCol","uTime","uCover","uTilt","uSeason","uSolar","uGreen","uQual","uCloudFade"))
+  uniforms:Object.assign({uSun:U.uSun,uCam:U.uCam},pick("uAtmoCol","uTime","uCover","uTilt","uSeason","uSolar","uGreen","uQual","uCloudFade","uEclipse","uEclipseR"))
 });
 const cloudMesh=new THREE.Mesh(new THREE.IcosahedronGeometry(1.028,14),cloudMat);
 scene.add(cloudMesh);
@@ -1811,7 +1816,7 @@ sunGeo.setAttribute('aSize',new THREE.BufferAttribute(new Float32Array([70]),1))
 sunGeo.setAttribute('aCol',new THREE.BufferAttribute(new Float32Array([1.6,1.45,1.15]),3));
 const sunPt=new THREE.Points(sunGeo,new THREE.ShaderMaterial({
   vertexShader:STAR_VERT,fragmentShader:STAR_FRAG,transparent:true,depthWrite:false,
-  blending:THREE.AdditiveBlending,depthTest:false}));
+  blending:THREE.AdditiveBlending,depthTest:true}));
 sunPt.renderOrder=-1;sunPt.position.set(120,0,0);scene.add(sunPt);
 
 /* ============================================================================
@@ -4293,12 +4298,16 @@ function updateComets(){
     // seen from the surface, when it is near
     if(f&&S.mode==='world'){
       _cq.copy(_cp).sub(_fp);const dist=_cq.length();_cq.normalize();
-      if(dist<orbR(3.5)&&ks<3){
-        const near=clamp((orbR(3.5)-dist)/orbR(3.5),0,1);
+      const nearBase=dist<orbR(3.5)?clamp((orbR(3.5)-dist)/orbR(3.5),0,1):0;
+      const near=Math.max(nearBase,c.forceNear||0);
+      if(near>0&&ks<3){
+        const len=7+18*near;
         for(let k=0;k<14;k++){
           const t=k/13;const idx=ks*14+k;
-          const P=_cq.clone().multiplyScalar(80).addScaledVector(_ct,t*near*9.0);
-          kp.setXYZ(idx,P.x,P.y,P.z);kz.setX(idx,(k===0?4.5:2.6-t*2.2)*near*0.35);kc.setXYZ(idx,0.75,0.92,1.0);
+          const P=_cq.clone().multiplyScalar(80).addScaledVector(_ct,t*len+0.3);
+          kp.setXYZ(idx,P.x,P.y,P.z);
+          kz.setX(idx,(k===0?3.4:2.6-t*2.1)*(0.45+near*0.8));
+          kc.setXYZ(idx,k===0?1.0:0.55+0.3*(1-t),k===0?0.98:0.85,1.0);
         }
         c.skyPos=_cq.clone().multiplyScalar(80);c.near=near;ks++;
       }else{c.skyPos=null;c.near=0;}
@@ -4316,7 +4325,7 @@ function cometPerihelion(c){
   const victims=SYS.planets.filter(p=>p.type!=='belt'&&p.type!=='gas'&&p.type!=='icegiant'&&Math.abs(p.a-q)<0.30);
   const f=curPlanet();
   if(f&&f.type!=='gas'&&f.type!=='icegiant'){ev('geo',`Comet <b>${c.name}</b> rounds the star, ${fmt(q,2)} AU out; its tail spans the evening sky of <b>${f.name}</b>.`);
-    cometPos(c,_cp);planetPos(f,_fp);const dir=_cp.clone().sub(_fp);if(dir.length()>0.01)momentSky('COMET',c.name,'perihelion '+fmt(q,2)+' AU from the star',dir,'comet');}
+    cometPos(c,_cp);planetPos(f,_fp);const dir=_cp.clone().sub(_fp);if(dir.length()>0.01)momentSky('COMET',c.name,'perihelion '+fmt(q,2)+' AU from the star',dir,'comet',()=>{c.forceNear=0.95;},()=>{c.forceNear=0;});}
   if(victims.length&&Math.random()<0.14){
     const v=victims[(Math.random()*victims.length)|0];
     if(v===f&&!S.gas&&W.V){
@@ -4341,10 +4350,11 @@ function updateEclipse(){
     const angR=Math.atan2(m.rad,dist);
     if(cosang>Math.cos(angR+0.032)){
       _tmp.copy(_md);globe.worldToLocal(_tmp);_tmp.normalize();
-      U.uEclipse.value.set(_tmp.x,_tmp.y,_tmp.z,clamp((cosang-Math.cos(angR+0.032))/0.01,0,1));
+      const lim=Math.cos(angR+0.032);
+      U.uEclipse.value.set(_tmp.x,_tmp.y,_tmp.z,clamp((cosang-lim)/Math.max(1e-6,1-lim),0,1));
       U.uEclipseR.value=angR*2.4+0.07;
       if(S.year-(m.lastEcl||-1e9)>400){m.lastEcl=S.year;ev('geo',`<b>${m.name}</b> crosses the face of the star. Day goes dim beneath its shadow.`);
-        momentGeneric('ECLIPSE',m.name+' crosses the star','the shadow sweeps '+placeOf(nearestVertex(_tmp.x,_tmp.y,_tmp.z)),nearestVertex(_tmp.x,_tmp.y,_tmp.z),3.0,'eclipse');}
+        momentEclipse(m);}
       return;
     }
   }
@@ -4551,10 +4561,10 @@ function flyToLimb(i,dist,frac,rate){
   let dth=(t.theta+o)-cam.theta;dth=Math.atan2(Math.sin(dth),Math.cos(dth));
   cam.tTheta=cam.theta+dth;cam.tPhi=clamp(t.phi-o*0.18,0.12,3.02);cam.tDist=dist;cam.rate=rate||1.4;
 }
-function aimSky(dirWorld,dist,rate){
+function aimSky(dirWorld,dist,rate,ang){
   const D=dirWorld.clone().normalize();
   let perp=new THREE.Vector3(0,1,0).cross(D);if(perp.length()<0.1)perp.set(1,0,0).cross(D);perp.normalize();
-  const a=0.32;
+  const a=ang||0.32;
   const C=D.clone().multiplyScalar(-Math.cos(a)).addScaledVector(perp,Math.sin(a));
   C.applyQuaternion(axisGroup.quaternion.clone().invert());
   const sph=new THREE.Spherical().setFromVector3(C);
@@ -4570,7 +4580,12 @@ function cineHide(){el('cine').classList.remove('show');document.body.classList.
 function pushMoment(m){
   if(!S.cine||S.mode!=='world')return;
   if(CINE.suppress>0)return;
-  if(CINE.active){if(m.pri>CINE.active.pri){CINE.queue.unshift(m);}else if(CINE.queue.length<3)CINE.queue.push(m);return;}
+  m.queuedAt=performance.now();
+  if(CINE.active){
+    if(m.pri>CINE.active.pri){endMoment();CINE.cool=0;startMoment(m);}
+    else if(CINE.queue.length<3)CINE.queue.push(m);
+    return;
+  }
   if(CINE.cool>0&&m.pri<3){if(CINE.queue.length<3)CINE.queue.push(m);return;}
   startMoment(m);
 }
@@ -4580,6 +4595,7 @@ function startMoment(m){
   S.spin=0;S.playing=true;
   S.speed=m.speed!==undefined?m.speed:0.25;
   if(m.layer!==undefined){U.uLayer.value=m.layer;}
+  if(m.cellFn)m.cell=m.cellFn();
   if(m.cell!==undefined&&m.limb)flyToLimb(m.cell,m.dist||2.4,m.limb,m.rate||1.4);
   else if(m.cell!==undefined&&m.offset)flyToOffset(m.cell,m.offset,m.dist||1.8,m.rate||1.4);
   else if(m.cell!==undefined)flyTo(m.cell,m.dist||2.1,m.rate||1.4);
@@ -4607,7 +4623,9 @@ function cineTick(dt){
     if(m.tick)m.tick(dt);
     if(m.t>=m.dur)endMoment();
   }else if(CINE.queue.length&&CINE.cool<=0&&CINE.suppress<=0&&S.mode==='world'){
-    startMoment(CINE.queue.shift());
+    const m=CINE.queue.shift();
+    if(m.expire&&(performance.now()-m.queuedAt)/1000>m.expire)return;
+    startMoment(m);
   }
   if(S.tour)tourTick(dt);
 }
@@ -4742,8 +4760,21 @@ function momentFront(i,title,sub){
 function momentGeneric(kicker,title,sub,cell,dist,sfxName){
   pushMoment({pri:1,dur:8,cell,dist:dist||2.6,rate:1.3,sfx:sfxName,kicker:kicker+' \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
 }
-function momentSky(kicker,title,sub,dirWorld,sfxName){
-  pushMoment({pri:2,dur:10,skyDir:dirWorld.clone(),dist:6.5,rate:1.1,sfx:sfxName,kicker:kicker+' \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
+function momentSky(kicker,title,sub,dirWorld,sfxName,fx,after){
+  pushMoment({pri:2,dur:10,skyDir:dirWorld.clone(),dist:6.5,rate:1.1,sfx:sfxName,fx,after,kicker:kicker+' \u00b7 YR '+Math.round(S.year).toLocaleString(),title,sub});
+}
+function momentEclipse(m){
+  const md=new THREE.Vector3();
+  pushMoment({pri:3,dur:12,expire:2,dist:3.0,rate:2.0,sfx:'eclipse',
+    kicker:'ECLIPSE \u00b7 YR '+Math.round(S.year).toLocaleString(),title:m.name+' crosses the star',sub:'its shadow on '+W.pname,
+    cellFn:()=>{md.copy(m.mesh.position).normalize();_tmp.copy(md);globe.worldToLocal(_tmp);return nearestVertex(_tmp.x,_tmp.y,_tmp.z);},
+    tick:(dt)=>{const mm=CINE.active;if(mm.t>5.5&&!mm.cut){mm.cut=true;
+      md.copy(m.mesh.position).normalize();_tmp.copy(md);globe.worldToLocal(_tmp);
+      flyTo(nearestVertex(_tmp.x,_tmp.y,_tmp.z),1.12,2.6);mm.lookAtFn=()=>sunPt.position;
+      const rpx=Math.atan(m.rad/Math.max(0.5,m.r-1.12))/(camera.fov*Math.PI/360)*(renderer.domElement.clientHeight||720)*0.5;
+      const a=sunGeo.getAttribute('aSize');a.setX(0,clamp(rpx*1.7,34,140));a.needsUpdate=true;
+      el('cine-s').textContent='from beneath the shadow: '+m.name+' across the face of the star';}},
+    after:()=>{const a=sunGeo.getAttribute('aSize');a.setX(0,70);a.needsUpdate=true;}});
 }
 function sparkFront(n){
   if(!S.border)return;
@@ -4885,6 +4916,13 @@ function cladeTick(p,dy,focused){
   }
   sim.cladeAcc=(sim.cladeAcc||0)+dy;
   const live=livingClades(p);
+  if(!live.length){
+    // everything died; life starts again at the vents
+    if(bio>0.05&&sim.cladeAcc>600){sim.cladeAcc=0;const c=newClade(p,null,'marine');
+      const msg=`Life begins again on <b>${p.name}</b>: the <b>${c.name}</b> rise from the vents of a dead sea.`;
+      if(focused)ev('life',msg);else evBg(p,'life',msg);}
+    return;
+  }
   if(sim.cladeAcc>230){
     sim.cladeAcc=0;
     // radiation
@@ -5042,7 +5080,7 @@ const basePR=Math.min(window.devicePixelRatio||1,2);
 function applySize(){
   const q=QUAL[S.qual]||QUAL[2];
   renderer.setPixelRatio(Math.max(0.45,Math.min(basePR,q.pr)*q.base*renderScale));
-  renderer.setSize(rw||innerWidth,rh||innerHeight,false);
+  renderer.setSize(Math.max(2,rw||innerWidth),Math.max(2,rh||innerHeight),false);
 }
 function frame(){
   requestAnimationFrame(frame);
@@ -5075,7 +5113,8 @@ function frame(){
     const t=S.viewMoon.mesh.position;
     camera.position.normalize().multiplyScalar(cam.dist).add(t);
     camera.lookAt(t);
-  }else camera.lookAt(0,0,0);
+  }else if(CINE.active&&CINE.active.lookAtFn&&S.mode==='world')camera.lookAt(CINE.active.lookAtFn());
+  else camera.lookAt(0,0,0);
   camera.updateMatrixWorld();camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
   U.uTime.value=now*0.001;
   if(S.playing&&W.V)simulate(dt);
